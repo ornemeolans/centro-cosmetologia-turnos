@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { AuthShell } from '../components/AuthShell';
 import { Field, FormError, SubmitButton } from '../components/Field';
 import { api } from '../lib/api';
 import { errorMessage } from '../lib/auth';
@@ -18,21 +19,17 @@ export function RegisterPage() {
 
   if (register.isSuccess) {
     return (
-      <section className="mx-auto max-w-sm space-y-4">
-        <h1 className="text-2xl font-semibold">Revisá tu email</h1>
-        <p className="text-stone-600">
-          Te enviamos un enlace a <strong>{form.email}</strong> para activar tu cuenta. Vence en 24 horas.
-        </p>
-      </section>
+      <AuthShell eyebrow="Último paso" title="Revisá tu email"
+        intro={<>Te enviamos un enlace a <strong className="text-ink-strong">{form.email}</strong> para activar tu cuenta. Vence en 24 horas.</>}>
+        <p className="rounded-xl bg-sunken px-4 py-3 text-sm text-muted">¿No te llegó? Mirá en spam o promociones.</p>
+      </AuthShell>
     );
   }
 
   return (
-    <section className="mx-auto max-w-sm space-y-6">
-      <h1 className="text-2xl font-semibold">Crear cuenta</h1>
-      <p className="text-sm text-stone-600">
-        Usá el email que le diste a tu cosmetóloga: así vas a ver tu ficha y tus turnos.
-      </p>
+    <AuthShell eyebrow="Cuenta nueva" title="Crear cuenta"
+      intro="Usá el email que le diste a tu cosmetóloga: así vas a ver tu ficha y tus turnos."
+      footer={<p>¿Ya tenés cuenta? <Link to="/ingresar" className="text-ink-strong underline decoration-peach decoration-2 underline-offset-4 hover:decoration-accent-ink">Ingresá</Link></p>}>
       <form onSubmit={onSubmit} className="space-y-3">
         <Field label="Nombre y apellido" autoComplete="name" required value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -44,7 +41,6 @@ export function RegisterPage() {
         <FormError>{register.isError ? errorMessage(register.error) : undefined}</FormError>
         <SubmitButton pending={register.isPending}>Crear cuenta</SubmitButton>
       </form>
-      <p className="text-sm">¿Ya tenés cuenta? <Link to="/ingresar" className="text-brand underline">Ingresá</Link></p>
-    </section>
+    </AuthShell>
   );
 }

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
-import { Card, PageHeader } from '../components/ui';
+import { StatusCard } from '../components/AuthShell';
+import { Calendar, Download } from '../components/icons';
 import { api } from '../lib/api';
 import { dateTimeLabel, timeLabel } from '../lib/format';
 
@@ -14,17 +15,15 @@ export function CalendarLinkPage() {
   if (isError) return <p className="text-muted">El enlace no es válido.</p>;
   if (!data) return <p className="text-muted">Cargando…</p>;
   return (
-    <Card className="mx-auto max-w-lg">
-      <PageHeader title="Agregá tu turno al calendario" subtitle={data.title} />
-      <p className="mb-6 text-[1.6rem] leading-tight first-letter:uppercase text-ink-strong">{dateTimeLabel(data.startAt)} a {timeLabel(data.endAt)}</p>
-      {data.status === 'CANCELED' ? (
-        <p className="rounded-lg bg-red-bg px-3.5 py-2.5 text-red-fg">Este turno fue cancelado.</p>
-      ) : (
-        <div className="flex flex-wrap gap-2">
-          <a href={data.googleUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-peach px-4 py-2 text-[15px] font-medium text-n8 transition hover:bg-[#b07a7d]">Google Calendar</a>
-          <a href={data.icsUrl} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-line bg-surface px-4 py-2 text-[15px] text-ink-strong transition hover:border-n4">Apple, Outlook u otro (.ics)</a>
-        </div>
+    <StatusCard tone={data.status === 'CANCELED' ? 'error' : 'neutral'} icon={<Calendar />} eyebrow={data.title}
+      title={data.status === 'CANCELED' ? 'Este turno fue cancelado' : 'Agregá tu turno al calendario'}
+      text={<span className="inline-block font-mono text-[15px] text-ink-strong first-letter:uppercase">{dateTimeLabel(data.startAt)} a {timeLabel(data.endAt)}</span>}>
+      {data.status !== 'CANCELED' && (
+        <>
+          <a href={data.googleUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-lg bg-peach px-5 font-medium text-n8 transition hover:bg-[#b07a7d] active:scale-[0.98]"><Calendar /> Google Calendar</a>
+          <a href={data.icsUrl} className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-lg border border-line bg-surface px-5 font-medium text-ink-strong transition hover:border-n4"><Download /> Apple, Outlook u otro</a>
+        </>
       )}
-    </Card>
+    </StatusCard>
   );
 }

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { AuthShell } from '../components/AuthShell';
 import { Field, FormError, SubmitButton } from '../components/Field';
 import { api } from '../lib/api';
 import { errorMessage } from '../lib/auth';
@@ -17,11 +18,11 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <section className="mx-auto max-w-sm space-y-6">
-      <h1 className="text-2xl font-semibold">Recuperar contraseña</h1>
+    <AuthShell eyebrow="Acceso" title="Recuperar contraseña"
+      footer={<Link to="/ingresar" className="text-ink-strong underline decoration-peach decoration-2 underline-offset-4 hover:decoration-accent-ink">Volver a ingresar</Link>}>
       {forgot.isSuccess ? (
-        <p className="text-stone-600">
-          Si hay una cuenta con <strong>{email}</strong>, te llegará un enlace para elegir una contraseña nueva. Vence en 1 hora.
+        <p className="text-muted">
+          Si hay una cuenta con <strong className="text-ink-strong">{email}</strong>, te llegará un enlace para elegir una contraseña nueva. Vence en 1 hora.
         </p>
       ) : (
         <form onSubmit={onSubmit} className="space-y-3">
@@ -30,8 +31,7 @@ export function ForgotPasswordPage() {
           <SubmitButton pending={forgot.isPending}>Enviar enlace</SubmitButton>
         </form>
       )}
-      <Link to="/ingresar" className="text-sm text-brand underline">Volver a ingresar</Link>
-    </section>
+    </AuthShell>
   );
 }
 
@@ -58,8 +58,7 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <section className="mx-auto max-w-sm space-y-6">
-      <h1 className="text-2xl font-semibold">Elegí una contraseña nueva</h1>
+    <AuthShell eyebrow="Acceso" title="Elegí una contraseña nueva">
       <form onSubmit={onSubmit} className="space-y-3">
         <Field label="Contraseña nueva" type="password" autoComplete="new-password" required minLength={10}
           hint="Al menos 10 caracteres. Se cerrarán tus otras sesiones." value={password}
@@ -67,6 +66,6 @@ export function ResetPasswordPage() {
         <FormError>{reset.isError ? errorMessage(reset.error) : undefined}</FormError>
         <SubmitButton pending={reset.isPending}>Guardar contraseña</SubmitButton>
       </form>
-    </section>
+    </AuthShell>
   );
 }

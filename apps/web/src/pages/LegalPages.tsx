@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Eyebrow } from '../components/ui';
 import { CENTER_WHATSAPP } from '../lib/api';
 
 const CENTER_NAME = import.meta.env.VITE_CENTER_NAME ?? 'Centro de Cosmetología';
@@ -7,10 +8,12 @@ const UPDATED = '10 de octubre de 2026';
 
 function Legal({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <article className="mx-auto max-w-3xl space-y-6 [&_h2]:mt-10 [&_h2]:text-2xl [&_li]:ml-5 [&_li]:list-disc [&_p]:text-ink">
-      <h1 className="text-4xl">{title}</h1>
-      <p className="text-sm text-muted">Última actualización: {UPDATED}</p>
-      {children}
+    <article className="mx-auto max-w-3xl">
+      <Eyebrow>Legal · Actualizado el {UPDATED}</Eyebrow>
+      <h1 className="mt-4 text-[2.6rem] leading-[1.02] sm:text-[3.6rem]">{title}<span className="text-peach">.</span></h1>
+      <div className="mt-10 space-y-5 rounded-[20px] border border-line/70 bg-surface p-6 leading-relaxed sm:p-10 [&_a]:decoration-peach [&_a]:decoration-2 [&_h2]:mt-10 [&_h2]:border-t [&_h2]:border-line [&_h2]:pt-8 [&_h2]:text-[1.6rem] [&_h2:first-of-type]:mt-6 [&_li]:ml-5 [&_li]:list-disc [&_li]:pl-1 [&_li::marker]:text-rose [&_p]:text-ink [&_ul]:space-y-2">
+        {children}
+      </div>
     </article>
   );
 }

@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { Card, PageHeader } from '../components/ui';
+import { StatusCard } from '../components/AuthShell';
+import { ArrowRight, Check, Close } from '../components/icons';
 import { api } from '../lib/api';
 import { dateTimeLabel } from '../lib/format';
 import { useBookingStore } from '../stores/booking';
@@ -32,24 +33,24 @@ export function PaymentResultPage() {
 
   if (status === 'error') {
     return (
-      <Card>
-        <PageHeader title="El pago no se completó" subtitle="No se cobró nada. Podés intentarlo de nuevo mientras dure la reserva." />
-        <Link to="/mis-turnos" className="underline">Volver a mis turnos</Link>
-      </Card>
+      <StatusCard tone="error" icon={<Close />} eyebrow="Mercado Pago" title="El pago no se completó"
+        text="No se cobró nada. Podés intentarlo de nuevo mientras dure la reserva.">
+        <Link to="/mis-turnos" className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-lg border border-line bg-surface px-5 font-medium text-ink-strong transition hover:border-n4">Volver a mis turnos</Link>
+      </StatusCard>
     );
   }
   return (
-    <Card>
-      {confirmed ? (
-        <>
-          <PageHeader title="¡Turno confirmado!" subtitle={`Te esperamos el ${dateTimeLabel(data!.appointment.startAt)}. Te mandamos la confirmación por WhatsApp.`} />
-          <Link to="/mis-turnos" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-peach px-4 py-2 text-[15px] font-medium text-n8 transition hover:bg-[#b07a7d]">Ver mis turnos y agregarlo al calendario</Link>
-        </>
-      ) : timedOut || status === 'pendiente' ? (
-        <PageHeader title="Estamos esperando la confirmación del pago" subtitle="Apenas Mercado Pago lo acredite te avisamos por WhatsApp. No hace falta que pagues de nuevo." />
-      ) : (
-        <PageHeader title="Confirmando tu pago…" subtitle="Esto suele tardar unos segundos." />
-      )}
-    </Card>
+    confirmed ? (
+      <StatusCard tone="ok" icon={<Check />} eyebrow="Seña acreditada" title="¡Turno confirmado!"
+        text={<>Te esperamos el <span className="text-ink-strong">{dateTimeLabel(data!.appointment.startAt).toLowerCase()}</span>. Te mandamos la confirmación por WhatsApp y desde tus turnos lo podés sumar al calendario.</>}>
+        <Link to="/mis-turnos" className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-lg bg-peach px-5 font-medium text-n8 transition hover:bg-[#b07a7d] active:scale-[0.98]">Ver mis turnos <ArrowRight /></Link>
+      </StatusCard>
+    ) : timedOut || status === 'pendiente' ? (
+      <StatusCard tone="wait" icon={<span className="font-mono text-xl">…</span>} eyebrow="Mercado Pago" title="Estamos esperando la confirmación del pago"
+        text="Apenas Mercado Pago lo acredite te avisamos por WhatsApp. No hace falta que pagues de nuevo." />
+    ) : (
+      <StatusCard icon={<span className="size-6 animate-spin rounded-full border-2 border-n4 border-t-peach motion-reduce:animate-none" />} eyebrow="Mercado Pago"
+        title="Confirmando tu pago…" text="Esto suele tardar unos segundos." />
+    )
   );
 }

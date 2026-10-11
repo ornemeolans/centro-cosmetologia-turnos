@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { BrandMark, Close, Menu } from './components/icons';
+import { StatusCard } from './components/AuthShell';
 import { RequireRole } from './components/RequireRole';
 import { Button } from './components/ui';
 import { homeFor, useLogout, useMe, type Role } from './lib/auth';
@@ -114,7 +115,7 @@ export function App() {
           <Route path="/configuracion" element={<RequireRole roles={PRO}><SettingsPage /></RequireRole>} />
           <Route path="/reportes" element={<RequireRole roles={PRO}><ReportsPage /></RequireRole>} />
           <Route path="/admin" element={<RequireRole roles={['OWNER']}><AdminPage /></RequireRole>} />
-          <Route path="*" element={<p className="text-muted">Página no encontrada.</p>} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <footer className="px-3 sm:px-5">
@@ -130,5 +131,14 @@ export function App() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function NotFound() {
+  return (
+    <StatusCard icon={<span className="font-mono text-lg">404</span>} eyebrow="Error 404" title="Esta página no existe"
+      text="Puede que el enlace esté incompleto o que la página se haya movido.">
+      <Link to="/" className="inline-flex min-h-12 items-center justify-center rounded-lg bg-peach px-5 font-medium text-n8 transition hover:bg-[#b07a7d]">Ir al inicio</Link>
+    </StatusCard>
   );
 }
