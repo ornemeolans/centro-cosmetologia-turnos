@@ -256,7 +256,7 @@ function NewAppointment({ initialRecordId, onDone }: { initialRecordId?: string;
 
 function FirstVisitForm({ onCreated }: { onCreated: (recordId: string) => void }) {
   const pros = useQuery({ queryKey: ['professionals'], queryFn: () => api<{ professionals: { id: string; displayName: string }[] }>('/professionals') });
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phoneE164: '+549', ownerProfessionalId: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phoneE164: '', ownerProfessionalId: '' });
   const create = useMutation({
     mutationFn: () => send<{ id: string }>('/staff/client-records/first-visit', 'POST', { ...form, phoneE164: form.phoneE164.replace(/[\s-]/g, '') }),
     onSuccess: ({ id }) => onCreated(id),
@@ -274,7 +274,7 @@ function FirstVisitForm({ onCreated }: { onCreated: (recordId: string) => void }
         <Field label="Apellido" required value={form.lastName} onChange={set('lastName')} />
       </div>
       <Field label="Email" type="email" required value={form.email} onChange={set('email')} hint="Con este email va a poder entrar a la app." />
-      <Field label="Celular (WhatsApp)" type="tel" required value={form.phoneE164} onChange={set('phoneE164')} />
+      <Field label="Celular (WhatsApp)" type="tel" required placeholder="351 732 6453" value={form.phoneE164} onChange={set('phoneE164')} hint="Con código de área, sin el 0 ni el 15." />
       <Select label="Profesional" required value={form.ownerProfessionalId} onChange={set('ownerProfessionalId')}>
         <option value="" disabled>Elegí</option>
         {pros.data?.professionals.map((p) => <option key={p.id} value={p.id}>{p.displayName}</option>)}

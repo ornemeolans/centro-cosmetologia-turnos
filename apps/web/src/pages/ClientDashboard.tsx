@@ -279,7 +279,7 @@ function Waitlist() {
 }
 
 function PhoneForm() {
-  const [phone, setPhone] = useState('+549');
+  const [phone, setPhone] = useState('');
   const qc = useQueryClient();
   const save = useMutation({
     mutationFn: () => send('/me', 'PATCH', { phoneE164: phone.replace(/[\s-]/g, '') }),
@@ -293,7 +293,7 @@ function PhoneForm() {
     <form onSubmit={onSubmit} className="space-y-3 rounded-xl border border-yellow-bg bg-yellow-bg/60 p-5">
       <p className="text-sm">Dejanos tu celular para enviarte las confirmaciones y recordatorios por WhatsApp.</p>
       <Field label="Celular" type="tel" autoComplete="tel" required value={phone} onChange={(e) => setPhone(e.target.value)}
-        hint="Con código de país y de área, sin el 15. Ejemplo: +5491123456789" />
+        placeholder="351 732 6453" hint="Con código de área, sin el 0 ni el 15." />
       <FormError>{save.isError ? errorMessage(save.error) : undefined}</FormError>
       <SubmitButton pending={save.isPending}>Guardar</SubmitButton>
     </form>

@@ -67,8 +67,23 @@ const messages: Record<string, string> = {
   MP_NOT_CONFIGURED: 'Falta configurar la aplicación de Mercado Pago del centro.',
 };
 
+const fieldMessages: Record<string, string> = {
+  phoneE164: 'Revisá el celular: con código de área, por ejemplo 351 732 6453.',
+  email: 'Revisá el email.',
+  password: 'La contraseña tiene que tener al menos 10 caracteres.',
+  birthDate: 'Revisá la fecha de nacimiento.',
+  firstName: 'Completá el nombre.',
+  lastName: 'Completá el apellido.',
+};
+
 export function errorMessage(err: unknown): string {
   const code = err instanceof ApiError ? err.code : typeof err === 'string' ? err : '';
+  // Error de validación: decir qué campo revisar en lugar de un mensaje genérico.
+  if (err instanceof ApiError && code === 'BAD_REQUEST') {
+    const issues = (err.body.issues ?? []) as { path?: (string | number)[] }[];
+    const field = issues.map((i) => String(i.path?.at(-1) ?? '')).find((f) => fieldMessages[f]);
+    if (field) return fieldMessages[field];
+  }
   return messages[code] ?? 'Algo salió mal. Probá de nuevo en unos minutos.';
 }
 

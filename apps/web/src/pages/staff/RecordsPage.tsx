@@ -77,7 +77,7 @@ function NewRecordForm() {
         <Field label="Apellido" required value={form.lastName} onChange={set('lastName')} />
       </div>
       <Field label="Email" type="email" required value={form.email} onChange={set('email')} hint="Cuando la clienta entre con este email, la ficha se vincula sola." />
-      <Field label="Celular" type="tel" placeholder="+5491123456789" value={form.phoneE164} onChange={set('phoneE164')} />
+      <Field label="Celular" type="tel" placeholder="351 732 6453" hint="Con código de área, sin el 0 ni el 15." value={form.phoneE164} onChange={set('phoneE164')} />
       <Field label="Fecha de nacimiento" type="date" value={form.birthDate} onChange={set('birthDate')} />
       <FormError>{create.isError ? errorMessage(create.error) : undefined}</FormError>
       {existing && <Link className="text-sm underline" to={`/fichas/${existing}`}>Abrir la ficha existente</Link>}
