@@ -10,3 +10,5 @@ blob-report/
 coverage/
 .pgdata/
 .pgdata-test/
+# Fotos de fichas guardadas en desarrollo (datos de salud: nunca al repositorio)
+apps/api/uploads/
