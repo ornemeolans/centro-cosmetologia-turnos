@@ -38,7 +38,8 @@ const localStorage: Storage = {
 
 /** Supabase Storage por REST con la service role key (solo del lado del servidor). */
 function supabaseStorage(url: string, key: string, bucket: string): Storage {
-  const headers = { Authorization: `Bearer ${key}`, apikey: key };
+  // Las claves nuevas (sb_secret_…) no son JWT: van solo en `apikey`. Las legacy (service_role) también en Authorization.
+  const headers: Record<string, string> = key.startsWith('sb_') ? { apikey: key } : { Authorization: `Bearer ${key}`, apikey: key };
   const objectUrl = (path: string) => `${url}/storage/v1/object/${bucket}/${path}`;
   return {
     async put(path, data, contentType) {

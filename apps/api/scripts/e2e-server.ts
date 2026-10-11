@@ -23,6 +23,8 @@ Object.assign(process.env, {
   OWNER_EMAIL: 'duena@centro.test',
   ENABLE_DEV_OUTBOX: '1',
   EMAIL_API_KEY: '',
+  GMAIL_USER: '',
+  GMAIL_APP_PASSWORD: '',
   WHATSAPP_TOKEN: '',
 });
 

@@ -11,6 +11,8 @@ export default defineConfig({
       OWNER_EMAIL: 'duena@centro.com',
       WEB_ORIGIN: 'http://localhost:5173',
       EMAIL_API_KEY: '',
+      GMAIL_USER: '',
+      GMAIL_APP_PASSWORD: '',
       MP_WEBHOOK_SECRET: 'mp-webhook-secret-test',
       ENABLE_DEV_OUTBOX: '',
       WHATSAPP_TOKEN: '',

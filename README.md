@@ -134,9 +134,13 @@ En el administrador de WhatsApp Business, dar de alta estas plantillas (categor�
 
 Variables: `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_TOKEN` (token permanente de usuario del sistema), `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN` (cualquier texto). Webhook: `https://TU-DOMINIO/api/v1/webhooks/whatsapp`, suscripto a `messages`. Si WhatsApp falla o la clienta no tiene celular, el aviso sale por email.
 
-### 5. Email
+### 5. Email (Gmail del centro)
 
-Cuenta gratuita en [Resend](https://resend.com) con el dominio del centro verificado: `EMAIL_API_KEY` y `EMAIL_FROM`.
+1. En la cuenta de Gmail del centro activá la verificación en 2 pasos: https://myaccount.google.com/signinoptions/twosv
+2. Creá una contraseña de aplicación en https://myaccount.google.com/apppasswords (nombre: "Turnos").
+3. `GMAIL_USER` = la dirección de Gmail; `GMAIL_APP_PASSWORD` = la contraseña de 16 letras.
+
+Gmail permite unos 500 envíos por día, de sobra para un centro. (Alternativa opcional: Resend con dominio propio, `EMAIL_API_KEY` y `EMAIL_FROM`.)
 
 ### 6. Hosting (planes gratuitos)
 

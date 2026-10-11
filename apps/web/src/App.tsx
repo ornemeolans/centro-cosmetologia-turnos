@@ -5,6 +5,7 @@ import { BookingWizard } from './pages/BookingWizard';
 import { CalendarLinkPage } from './pages/CalendarLinkPage';
 import { ClientDashboard } from './pages/ClientDashboard';
 import { LandingPage } from './pages/LandingPage';
+import { PrivacyPage, TermsPage } from './pages/LegalPages';
 import { LoginPage } from './pages/LoginPage';
 import { ForgotPasswordPage, ResetPasswordPage } from './pages/PasswordPages';
 import { PaymentResultPage } from './pages/PaymentResultPage';
@@ -73,6 +74,8 @@ export function App() {
           <Route path="/recuperar" element={<ForgotPasswordPage />} />
           <Route path="/restablecer" element={<ResetPasswordPage />} />
           <Route path="/c/:token" element={<CalendarLinkPage />} />
+          <Route path="/privacidad" element={<PrivacyPage />} />
+          <Route path="/terminos" element={<TermsPage />} />
 
           <Route path="/mis-turnos" element={<RequireRole roles={['CLIENT']}><ClientDashboard /></RequireRole>} />
           <Route path="/reservar" element={<RequireRole roles={['CLIENT']}><BookingWizard /></RequireRole>} />
@@ -87,6 +90,12 @@ export function App() {
           <Route path="*" element={<p className="text-muted">Página no encontrada.</p>} />
         </Routes>
       </main>
+      <footer className="border-t border-line">
+        <div className="mx-auto flex max-w-6xl flex-wrap gap-x-6 gap-y-1 px-4 py-6 text-xs text-muted">
+          <Link to="/privacidad" className="hover:text-ink-strong">Política de privacidad</Link>
+          <Link to="/terminos" className="hover:text-ink-strong">Términos y condiciones</Link>
+        </div>
+      </footer>
     </div>
   );
 }

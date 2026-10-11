@@ -32,6 +32,10 @@ const schema = z.object({
   CENTER_WHATSAPP_NUMBER: optional,
   CENTER_NAME: z.string().default('Centro de Cosmetología'),
   CENTER_ADDRESS: optional,
+  /** Emails desde el Gmail del centro (recomendado). La contraseña es una "contraseña de aplicación" de Google. */
+  GMAIL_USER: optional,
+  GMAIL_APP_PASSWORD: optional,
+  /** Alternativa: Resend con dominio propio. */
   EMAIL_API_KEY: optional,
   EMAIL_FROM: optional,
   CRON_SECRET: z.string().default('dev-cron-secret'),
