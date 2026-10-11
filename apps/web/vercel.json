@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://REEMPLAZAR-CON-TU-API.onrender.com/api/:path*" },
+    { "source": "/api/:path*", "destination": "https://turnos-api-0l1n.onrender.com/api/:path*" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

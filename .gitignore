@@ -12,3 +12,5 @@ coverage/
 .pgdata-test/
 # Fotos de fichas guardadas en desarrollo (datos de salud: nunca al repositorio)
 apps/api/uploads/
+# Variables listas para pegar en Render (contienen secretos)
+.env.render
