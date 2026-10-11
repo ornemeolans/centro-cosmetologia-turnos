@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+/* Monocromo cálido + acentos pastel apagados (dirección "minimalist-ui"). */
+@theme {
+  --font-sans: "Geist", "Helvetica Neue", system-ui, sans-serif;
+  --font-serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+
+  --color-canvas: #fbfbfa;
+  --color-surface: #ffffff;
+  --color-sunken: #f7f6f3;
+  --color-line: #eaeaea;
+  --color-ink: #2f3437;
+  --color-ink-strong: #111111;
+  --color-muted: #787774;
+
+  --color-brand: #111111;
+  --color-brand-soft: #f1efe9;
+
+  --color-red-bg: #fdebec;
+  --color-red-fg: #9f2f2d;
+  --color-blue-bg: #e1f3fe;
+  --color-blue-fg: #1f6c9f;
+  --color-green-bg: #edf3ec;
+  --color-green-fg: #346538;
+  --color-yellow-bg: #fbf3db;
+  --color-yellow-fg: #956400;
+}
+
+body {
+  @apply bg-canvas font-sans text-ink antialiased;
+  line-height: 1.6;
+}
+
+h1, h2, h3 {
+  @apply font-serif text-ink-strong;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+:focus-visible {
+  outline: 2px solid #111111;
+  outline-offset: 2px;
+}
+
+dialog::backdrop {
+  background: rgb(17 17 17 / 0.25);
+}

@@ -1,0 +1,43 @@
+{
+  "name": "@turnos/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc --noEmit",
+    "start": "tsx src/server.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "prisma generate",
+    "db:local": "tsx scripts/dev-db.ts",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@turnos/shared": "*",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "google-auth-library": "^9.15.0",
+    "helmet": "^8.0.0",
+    "luxon": "^3.5.0",
+    "tsx": "^4.19.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.7",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/luxon": "^3.4.2",
+    "@types/node": "^22.9.0",
+    "@types/supertest": "^6.0.2",
+    "embedded-postgres": "^17.5.0-beta.15",
+    "prisma": "^5.22.0",
+    "supertest": "^7.0.0",
+    "vitest": "^2.1.4"
+  }
+}

@@ -1,0 +1,532 @@
+// Esquema de la base de datos (ver "Esquema de base de datos" en el documento de diseño).
+// La restricción anti-solapamiento (EXCLUDE) no se puede expresar en Prisma: está en prisma/sql/001_constraints.sql.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENT
+  PROFESSIONAL
+  RECEPTION
+  OWNER
+}
+
+enum AuthProvider {
+  GOOGLE
+  PASSWORD
+}
+
+enum AppointmentStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  COMPLETED
+  NO_SHOW
+  EXPIRED
+  CANCELED
+  RESCHEDULED
+}
+
+enum AppointmentSource {
+  CLIENT
+  STAFF
+  RECEPTION
+}
+
+enum ClientRecordStatus {
+  PRIMERA_VEZ
+  ACTIVA
+}
+
+enum ExceptionType {
+  BLOCK
+  EXTRA
+}
+
+enum ConsentType {
+  TRATAMIENTO
+  DATOS_SALUD
+  FOTOS
+  WHATSAPP
+}
+
+enum PhotoKind {
+  ANTES
+  DESPUES
+}
+
+enum CreditReason {
+  CANCEL_ON_TIME
+  USED
+  EXPIRED
+  TRANSFER
+  ADJUST
+}
+
+enum InquiryType {
+  CONSULTA
+  CAMBIO_EMAIL
+}
+
+enum Channel {
+  WHATSAPP
+  EMAIL
+}
+
+enum WaitlistStatus {
+  ACTIVE
+  NOTIFIED
+  BOOKED
+  CANCELED
+}
+
+model User {
+  id              String         @id @default(uuid()) @db.Uuid
+  email           String?        @unique // null solo para usuarios de recepción con nombre de usuario
+  emailVerifiedAt DateTime?
+  name            String
+  phoneE164       String?
+  role            Role           @default(CLIENT)
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  identities      AuthIdentity[]
+  sessions        Session[]
+  emailTokens     EmailToken[]
+  professional    Professional?
+  clientRecord    ClientRecord?
+
+  @@map("users")
+}
+
+model AuthIdentity {
+  id              String       @id @default(uuid()) @db.Uuid
+  userId          String       @db.Uuid
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider        AuthProvider
+  providerSubject String // google sub, email normalizado o nombre de usuario de recepción
+  passwordHash    String? // scrypt, solo PASSWORD
+  verifiedAt      DateTime? // una identidad PASSWORD no permite entrar hasta verificar el email
+  createdAt       DateTime     @default(now())
+
+  @@unique([provider, providerSubject])
+  @@map("auth_identities")
+}
+
+model Session {
+  id         String   @id // sha256 del token de la cookie; el token en claro nunca se guarda
+  userId     String   @db.Uuid
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  userAgent  String?
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+enum TokenPurpose {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
+model EmailToken {
+  id        String       @id @default(uuid()) @db.Uuid
+  tokenHash String       @unique
+  userId    String       @db.Uuid
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose   TokenPurpose
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime     @default(now())
+
+  @@map("email_tokens")
+}
+
+model StaffAllowlist {
+  id          String   @id @default(uuid()) @db.Uuid
+  email       String   @unique
+  role        Role     @default(RECEPTION)
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now())
+
+  @@map("staff_allowlist")
+}
+
+model Professional {
+  id                 String                  @id @default(uuid()) @db.Uuid
+  userId             String?                 @unique @db.Uuid
+  user               User?                   @relation(fields: [userId], references: [id])
+  displayName        String
+  inviteEmail        String
+  inviteTokenHash    String?
+  inviteExpiresAt    DateTime?
+  minAdvanceHours    Int                     @default(24)
+  maxAdvanceDays     Int                     @default(30)
+  mpUserId           String?
+  mpAccessTokenEnc   String?
+  mpRefreshTokenEnc  String?
+  mpTokenExpiresAt   DateTime?
+  isActive           Boolean                 @default(true)
+  treatments         ProfessionalTreatment[]
+  combos             TreatmentCombo[]
+  schedules          Schedule[]
+  exceptions         ScheduleException[]
+  appointments       Appointment[]
+  ownedRecords       ClientRecord[]          @relation("RecordOwner")
+  accessGrants       RecordAccessGrant[]
+
+  @@map("professionals")
+}
+
+model Treatment {
+  id            String                  @id @default(uuid()) @db.Uuid
+  name          String
+  description   String?
+  isActive      Boolean                 @default(true)
+  professionals ProfessionalTreatment[]
+  items         AppointmentItem[]
+
+  @@map("treatments")
+}
+
+model ProfessionalTreatment {
+  professionalId String       @db.Uuid
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  treatmentId    String       @db.Uuid
+  treatment      Treatment    @relation(fields: [treatmentId], references: [id])
+  durationMin    Int
+  priceCents     Int
+  depositPercent Int // 0–100
+  isActive       Boolean      @default(true)
+
+  @@id([professionalId, treatmentId])
+  @@map("professional_treatments")
+}
+
+model TreatmentCombo {
+  professionalId String       @db.Uuid
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  treatmentAId   String       @db.Uuid
+  treatmentBId   String       @db.Uuid
+
+  @@id([professionalId, treatmentAId, treatmentBId])
+  @@map("treatment_combos")
+}
+
+model CenterSettings {
+  id                   Int   @id @default(1)
+  bufferMin            Int   @default(15)
+  holdMin              Int   @default(20)
+  maxReschedules       Int   @default(2)
+  noticeBusinessDays   Int   @default(2)
+  creditValidDays      Int   @default(30)
+  waitlistPriorityMin  Int   @default(30)
+  maxAlertsPerWeek     Int   @default(3)
+  reliableMinVisits    Int   @default(3)
+  reliableMinRate      Float @default(0.9)
+  lastDailyJobAt       DateTime?
+
+  @@map("center_settings")
+}
+
+model CenterHours {
+  weekday   Int    @id // 1 = lunes … 7 = domingo
+  openTime  String // 'HH:mm'
+  closeTime String
+
+  @@map("center_hours")
+}
+
+model Holiday {
+  date DateTime @id @db.Date
+  name String
+
+  @@map("holidays")
+}
+
+model Schedule {
+  id             String       @id @default(uuid()) @db.Uuid
+  professionalId String       @db.Uuid
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  weekday        Int
+  startTime      String
+  endTime        String
+  validFrom      DateTime?    @db.Date
+  validTo        DateTime?    @db.Date
+
+  @@map("schedules")
+}
+
+model ScheduleException {
+  id             String        @id @default(uuid()) @db.Uuid
+  professionalId String        @db.Uuid
+  professional   Professional  @relation(fields: [professionalId], references: [id])
+  date           DateTime      @db.Date
+  startTime      String?
+  endTime        String?
+  type           ExceptionType
+  reason         String?
+
+  @@map("schedule_exceptions")
+}
+
+model ClientRecord {
+  id                  String              @id @default(uuid()) @db.Uuid
+  email               String              @unique // normalizado
+  userId              String?             @unique @db.Uuid
+  user                User?               @relation(fields: [userId], references: [id])
+  ownerProfessionalId String              @db.Uuid
+  ownerProfessional   Professional        @relation("RecordOwner", fields: [ownerProfessionalId], references: [id])
+  status              ClientRecordStatus  @default(PRIMERA_VEZ)
+  completedAt         DateTime?
+  firstName           String
+  lastName            String
+  phoneE164           String?
+  birthDate           DateTime?           @db.Date
+  skinType            String?
+  antecedentes        String?
+  alergias            String?
+  medicacion          String?
+  isReliable          Boolean             @default(false)
+  lastMinuteAlerts    Boolean             @default(false)
+  retentionUntil      DateTime? // último turno + 2 años
+  createdAt           DateTime            @default(now())
+  accessGrants        RecordAccessGrant[]
+  consents            Consent[]
+  photos              RecordPhoto[]
+  entries             RecordEntry[]
+  recommendations     Recommendation[]
+  appointments        Appointment[]
+  credits             CreditLedger[]
+  inquiries           ClientInquiry[]
+  waitlist            WaitlistEntry[]
+
+  @@map("client_records")
+}
+
+model RecordAccessGrant {
+  id              String       @id @default(uuid()) @db.Uuid
+  clientRecordId  String       @db.Uuid
+  clientRecord    ClientRecord @relation(fields: [clientRecordId], references: [id])
+  professionalId  String       @db.Uuid
+  professional    Professional @relation(fields: [professionalId], references: [id])
+  grantedByUserId String       @db.Uuid
+  grantedAt       DateTime     @default(now())
+  revokedAt       DateTime?
+
+  @@map("record_access_grants")
+}
+
+model Consent {
+  id                String       @id @default(uuid()) @db.Uuid
+  clientRecordId    String       @db.Uuid
+  clientRecord      ClientRecord @relation(fields: [clientRecordId], references: [id])
+  type              ConsentType
+  documentVersion   String
+  signedAt          DateTime
+  signatureFilePath String?
+  revokedAt         DateTime?
+
+  @@map("consents")
+}
+
+model RecordPhoto {
+  id             String       @id @default(uuid()) @db.Uuid
+  clientRecordId String       @db.Uuid
+  clientRecord   ClientRecord @relation(fields: [clientRecordId], references: [id])
+  appointmentId  String?      @db.Uuid
+  kind           PhotoKind
+  storagePath    String
+  takenAt        DateTime
+
+  @@map("record_photos")
+}
+
+model RecordEntry {
+  id             String       @id @default(uuid()) @db.Uuid
+  clientRecordId String       @db.Uuid
+  clientRecord   ClientRecord @relation(fields: [clientRecordId], references: [id])
+  appointmentId  String?      @db.Uuid
+  professionalId String       @db.Uuid
+  notesPrivate   String
+  createdAt      DateTime     @default(now())
+
+  @@map("record_entries")
+}
+
+model Recommendation {
+  id              String       @id @default(uuid()) @db.Uuid
+  clientRecordId  String       @db.Uuid
+  clientRecord    ClientRecord @relation(fields: [clientRecordId], references: [id])
+  appointmentId   String?      @db.Uuid
+  professionalId  String       @db.Uuid
+  body            String
+  visibleToClient Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+
+  @@map("recommendations")
+}
+
+model Appointment {
+  id                  String            @id @default(uuid()) @db.Uuid
+  clientRecordId      String            @db.Uuid
+  clientRecord        ClientRecord      @relation(fields: [clientRecordId], references: [id])
+  professionalId      String            @db.Uuid
+  professional        Professional      @relation(fields: [professionalId], references: [id])
+  startAt             DateTime          @db.Timestamptz(3)
+  endAt               DateTime          @db.Timestamptz(3)
+  blockedUntil        DateTime          @db.Timestamptz(3) // endAt + buffer: rango protegido por la restricción EXCLUDE
+  status              AppointmentStatus
+  source              AppointmentSource
+  isFirstVisit        Boolean           @default(false)
+  depositTotalCents   Int               @default(0)
+  creditAppliedCents  Int               @default(0) // saldo a favor que se descuenta al confirmar
+  depositPaidCents    Int               @default(0) // seña efectivamente cubierta (pago + saldo); pasa al turno reprogramado
+  holdExpiresAt       DateTime?
+  rescheduleCount     Int               @default(0)
+  rescheduledFromId   String?           @db.Uuid
+  forcedByOwnerReason String?
+  clientConfirmedAt   DateTime?
+  canceledAt          DateTime?
+  version             Int               @default(0)
+  icsUid              String            @default(uuid()) // se conserva al reprogramar: el calendario actualiza el mismo evento
+  createdAt           DateTime          @default(now())
+  items               AppointmentItem[]
+  payments            Payment[]
+  notifications       Notification[]
+
+  @@index([professionalId, startAt])
+  @@map("appointments")
+}
+
+model AppointmentItem {
+  id                 String      @id @default(uuid()) @db.Uuid
+  appointmentId      String      @db.Uuid
+  appointment        Appointment @relation(fields: [appointmentId], references: [id])
+  treatmentId        String      @db.Uuid
+  treatment          Treatment   @relation(fields: [treatmentId], references: [id])
+  sort               Int
+  durationMin        Int
+  priceCents         Int
+  depositPercent     Int
+  depositAmountCents Int
+
+  @@map("appointment_items")
+}
+
+model Payment {
+  id              String      @id @default(uuid()) @db.Uuid
+  appointmentId   String      @db.Uuid
+  appointment     Appointment @relation(fields: [appointmentId], references: [id])
+  professionalId  String      @db.Uuid // cobradora
+  mpPreferenceId  String?
+  mpPaymentId     String?     @unique
+  status          String
+  amountCents     Int
+  rawPayload      Json?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@map("payments")
+}
+
+model CreditLedger {
+  id             String       @id @default(uuid()) @db.Uuid
+  clientRecordId String       @db.Uuid
+  clientRecord   ClientRecord @relation(fields: [clientRecordId], references: [id])
+  professionalId String       @db.Uuid
+  amountCents    Int // + crédito / − uso o vencimiento
+  remainingCents Int          @default(0) // solo en créditos: lo que queda sin usar (se consume del más viejo)
+  reason         CreditReason
+  appointmentId  String?      @db.Uuid
+  expiresAt      DateTime? // solo en créditos: la reserva debe confirmarse antes
+  createdAt      DateTime     @default(now())
+
+  @@index([clientRecordId, professionalId])
+
+  @@map("credit_ledger")
+}
+
+model ClientInquiry {
+  id             String       @id @default(uuid()) @db.Uuid
+  clientRecordId String?      @db.Uuid // null si la clienta todavía no está vinculada (pedido de cambio de email)
+  clientRecord   ClientRecord? @relation(fields: [clientRecordId], references: [id])
+  professionalId String       @db.Uuid
+  type           InquiryType
+  body           String
+  requestedEmail String?
+  status         String       @default("OPEN")
+  createdAt      DateTime     @default(now())
+
+  @@map("client_inquiries")
+}
+
+model WaitlistEntry {
+  id             String         @id @default(uuid()) @db.Uuid
+  clientRecordId String         @db.Uuid
+  clientRecord   ClientRecord   @relation(fields: [clientRecordId], references: [id])
+  professionalId String         @db.Uuid
+  treatmentIds   String[]
+  dateFrom       DateTime       @db.Date
+  dateTo         DateTime       @db.Date
+  preferredRange String? // p. ej. "mañana", "tarde"
+  status         WaitlistStatus @default(ACTIVE)
+  createdAt      DateTime       @default(now())
+
+  @@map("waitlist_entries")
+}
+
+/// Funciona también como cola: el despachador toma las filas QUEUED con scheduledFor vencido.
+model Notification {
+  id                String       @id @default(uuid()) @db.Uuid
+  appointmentId     String?      @db.Uuid
+  appointment       Appointment? @relation(fields: [appointmentId], references: [id])
+  clientRecordId    String?      @db.Uuid
+  channel           Channel
+  template          String
+  to                String
+  payload           Json?
+  scheduledFor      DateTime     @default(now())
+  providerMessageId String?      @unique
+  status            String       @default("QUEUED") // QUEUED | SENT | DELIVERED | READ | FAILED | SKIPPED
+  attempts          Int          @default(0)
+  error             String?
+  sentAt            DateTime?
+  createdAt         DateTime     @default(now())
+
+  @@index([status, scheduledFor])
+  @@index([appointmentId, template])
+  @@map("notifications")
+}
+
+model WebhookEvent {
+  id          String    @id @default(uuid()) @db.Uuid
+  provider    String // MP | META
+  externalId  String
+  payload     Json
+  attempts    Int       @default(0)
+  lastError   String?
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([provider, externalId])
+  @@map("webhook_events")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorUserId String?  @db.Uuid
+  entity      String
+  entityId    String
+  action      String
+  diff        Json?
+  createdAt   DateTime @default(now())
+
+  @@map("audit_log")
+}
