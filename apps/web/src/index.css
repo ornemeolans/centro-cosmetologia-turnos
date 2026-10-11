@@ -1,48 +1,151 @@
+@import "@fontsource-variable/hanken-grotesk";
+@import "@fontsource/space-mono/400.css";
+@import "@fontsource/space-mono/700.css";
 @import "tailwindcss";
 
-/* Monocromo cálido + acentos pastel apagados (dirección "minimalist-ui"). */
+/*
+ * Paleta de la usuaria (Olive Petal, Golden Clover, Artic Daisy, Rose Blush, Peach Blossom)
+ * sobre la gramática de referencia: fondo con grilla de puntos, paneles oscuros, tarjetas
+ * blancas muy redondeadas, titulares grandes y livianos, datos en monoespaciada.
+ */
 @theme {
-  --font-sans: "Geist", "Helvetica Neue", system-ui, sans-serif;
-  --font-serif: "Newsreader", "Iowan Old Style", Georgia, serif;
-  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --font-sans: "Hanken Grotesk Variable", "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Hanken Grotesk Variable", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, Menlo, monospace;
 
-  --color-canvas: #fbfbfa;
-  --color-surface: #ffffff;
-  --color-sunken: #f7f6f3;
-  --color-line: #eaeaea;
-  --color-ink: #2f3437;
-  --color-ink-strong: #111111;
-  --color-muted: #787774;
+  /* Paleta original. */
+  --color-olive: #a3a380;
+  --color-golden: #d7ce93;
+  --color-daisy: #efebce;
+  --color-rose: #d8a48f;
+  --color-peach: #bb8588;
 
-  --color-brand: #111111;
-  --color-brand-soft: #f1efe9;
+  /* Neutros de una sola escala, teñidos de oliva (n0 → n8). */
+  --color-n0: #ffffff;
+  --color-n1: #f8f6ea;
+  --color-n2: #efebce;
+  --color-n3: #e0dcc2;
+  --color-n4: #bbb89f;
+  --color-n5: #86856d;
+  --color-n6: #5e5d4a;
+  --color-n7: #3a3a2d;
+  --color-n8: #28281e;
 
-  --color-red-bg: #fdebec;
-  --color-red-fg: #9f2f2d;
-  --color-blue-bg: #e1f3fe;
-  --color-blue-fg: #1f6c9f;
-  --color-green-bg: #edf3ec;
-  --color-green-fg: #346538;
-  --color-yellow-bg: #fbf3db;
-  --color-yellow-fg: #956400;
+  /* Roles que usa toda la app. */
+  --color-canvas: var(--color-n1);
+  --color-surface: var(--color-n0);
+  --color-sunken: #f2efd9;
+  --color-line: var(--color-n3);
+  --color-ink: var(--color-n7);
+  --color-ink-strong: var(--color-n8);
+  --color-muted: var(--color-n6);
+  --color-brand: var(--color-n8);
+  --color-brand-soft: var(--color-n2);
+  --color-panel: #2f2f24;
+  --color-panel-2: #3b3b2e;
+  --color-accent: var(--color-peach);
+  --color-accent-ink: #84494f;
+
+  /* Un color por tratamiento: banda sólida y fondo suave. */
+  --color-t1: #a3a380;
+  --color-t1-bg: #ebebdf;
+  --color-t2: #c9bc6a;
+  --color-t2-bg: #f4f0d6;
+  --color-t3: #d8a48f;
+  --color-t3-bg: #f6e6df;
+  --color-t4: #bb8588;
+  --color-t4-bg: #f1e2e3;
+  --color-t5: #8fa38a;
+  --color-t5-bg: #e5ece2;
+  --color-t6: #c49a6c;
+  --color-t6-bg: #f3e8db;
+
+  /* Estados, en la misma familia. */
+  --color-red-bg: #f4ddd8;
+  --color-red-fg: #8a3a32;
+  --color-blue-bg: #e2e6e3;
+  --color-blue-fg: #3d4f52;
+  --color-green-bg: #e3e9d4;
+  --color-green-fg: #47562a;
+  --color-yellow-bg: #f3ebc3;
+  --color-yellow-fg: #6c5812;
+}
+
+@layer base {
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  @apply bg-canvas font-sans text-ink antialiased;
-  line-height: 1.6;
+  @apply font-sans text-ink antialiased;
+  line-height: 1.55;
+  background-color: var(--color-canvas);
+  /* Grilla de puntos Rose Blush. */
+  background-image: radial-gradient(circle at 1px 1px, rgb(216 164 143 / 0.42) 1.2px, transparent 0);
+  background-size: 22px 22px;
+  background-attachment: fixed;
 }
 
 h1, h2, h3 {
-  @apply font-serif text-ink-strong;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
+  @apply text-ink-strong;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+/* Datos: horas, montos, duraciones y códigos. */
+.data, time, td, dd {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--color-rose);
+  color: var(--color-n8);
 }
 
 :focus-visible {
-  outline: 2px solid #111111;
+  outline: 2px solid var(--color-accent-ink);
   outline-offset: 2px;
+  border-radius: 6px;
+}
+
+input, select, textarea {
+  caret-color: var(--color-accent-ink);
+  accent-color: var(--color-n8);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--color-n5);
+}
+
+a {
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+* {
+  scrollbar-color: var(--color-n4) transparent;
+  scrollbar-width: thin;
 }
 
 dialog::backdrop {
-  background: rgb(17 17 17 / 0.25);
+  background: rgb(40 40 30 / 0.45);
+}
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .band-enter {
+    animation: band-enter 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+/* La banda de color del tratamiento se dibuja de izquierda a derecha al aparecer. */
+@keyframes band-enter {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
 }

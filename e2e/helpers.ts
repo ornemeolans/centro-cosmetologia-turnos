@@ -46,3 +46,12 @@ export function businessDayIso(n: number): string {
   }
   return new Intl.DateTimeFormat('en-CA', { timeZone: ZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 }
+
+/** Va a una sección del menú principal; en celular, primero abre el menú. */
+export async function openNav(page: Page, name: string) {
+  const menu = page.getByRole('button', { name: 'Menú' });
+  const desktopNav = page.getByRole('navigation', { name: 'Principal' }).filter({ visible: true });
+  await expect(menu.or(desktopNav).first()).toBeVisible();
+  if (await menu.isVisible()) await menu.click();
+  await page.getByRole('navigation', { name: 'Principal' }).filter({ visible: true }).getByRole('link', { name }).click();
+}

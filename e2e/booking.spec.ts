@@ -3,7 +3,7 @@ import { businessDayIso, login, registerAndVerify } from './helpers';
 
 test('la página de inicio ofrece ingresar y pedir el primer turno por WhatsApp', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Reservá tu turno' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Tu próximo turno/ })).toBeVisible();
   await expect(page.getByRole('link', { name: /Primera vez/ })).toHaveAttribute('href', /^https:\/\/wa\.me\/\d+\?text=/);
 
   await page.getByRole('main').getByRole('link', { name: 'Ingresar' }).click();

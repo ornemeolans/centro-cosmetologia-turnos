@@ -43,7 +43,7 @@ export function PaymentResultPage() {
       {confirmed ? (
         <>
           <PageHeader title="¡Turno confirmado!" subtitle={`Te esperamos el ${dateTimeLabel(data!.appointment.startAt)}. Te mandamos la confirmación por WhatsApp.`} />
-          <Link to="/mis-turnos" className="rounded-md bg-ink-strong px-4 py-2 text-sm font-medium text-white">Ver mis turnos y agregarlo al calendario</Link>
+          <Link to="/mis-turnos" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-peach px-4 py-2 text-[15px] font-medium text-n8 transition hover:bg-[#b07a7d]">Ver mis turnos y agregarlo al calendario</Link>
         </>
       ) : timedOut || status === 'pendiente' ? (
         <PageHeader title="Estamos esperando la confirmación del pago" subtitle="Apenas Mercado Pago lo acredite te avisamos por WhatsApp. No hace falta que pagues de nuevo." />

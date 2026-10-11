@@ -1,0 +1,133 @@
+{
+  "title": "Elegí el mundo visual",
+  "question": "El sorteo asignó «Línea dermocosmética». Quedate con esa, tomá una alternativa o pedí otra tanda.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Línea dermocosmética",
+      "kicker": "THE ROLL",
+      "lineage": "Cajas y frascos de dermocosmética de farmacia",
+      "thesis": "Cada tratamiento es una línea de producto: su color, su ficha técnica y su dosis exacta.",
+      "palette": ["#f2f5f3", "#14302f", "#2f9e8f", "#c4587a", "#d98a32", "#6b5ca8"],
+      "materials": ["cartón blanco clínico", "banda de color por línea", "tipografía técnica precisa"],
+      "viewport": "Reserva: tratamientos como frentes de caja con banda de color y ficha (60 min · $ 30.000 · seña 30 %); agenda del equipo con cada turno teñido por la línea del tratamiento.",
+      "risk": "Si los colores de línea se usan tímidos, queda como otra app gris de turnos.",
+      "raised": [
+        { "from": "operate-b-exposure-record-zone-sheets", "raise": "Los neutros salen de una sola escala de 9 pasos; no hay grises sueltos." },
+        { "from": "digital-design-canon-monochrome-product-marketing", "raise": "Cada regla se muestra con su número concreto al lado: fecha límite, monto de seña, saldo." },
+        { "from": "editorial-sequence-montage-botanical-folio-season", "raise": "Las fotos antes/después de la ficha se ven a la misma escala y sobre el mismo fondo." },
+        { "from": "wayfinding-cartography-signage-terminal-yellow-wayfinding", "raise": "En el celular la reserva muestra una sola decisión por vez y lo elegido queda marcado arriba." },
+        { "from": "crouwel-grid-specimen", "raise": "La agenda es una grilla real de 15 minutos: los turnos encajan en sus celdas." }
+      ],
+      "comp": ".impeccable/mocks/decision/assigned.png"
+    },
+    {
+      "id": "model-pick",
+      "label": "Fichero de cartulina",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "Fichas de cosmetóloga en cartulina rayada",
+      "thesis": "La app es el fichero del centro: cada clienta, cada turno, una ficha con pestaña.",
+      "palette": ["#f4efe4", "#2b2a27", "#b5523b", "#5d7a6a"],
+      "materials": ["cartulina rayada", "pestañas de color", "tinta azul de lapicera"],
+      "viewport": "Agenda como fichas apiladas por hora; la ficha clínica como tarjeta con pestañas.",
+      "risk": "Es el rumbo más familiar: papel crema + tinta, lo que la mayoría de las veces sale para este rubro.",
+      "comp": ".impeccable/mocks/decision/model-pick.png"
+    },
+    {
+      "id": "challenger-boarding-pass",
+      "label": "Pase de embarque",
+      "verdict": "competitive",
+      "lineage": "Pase de embarque y tablero de partidas",
+      "thesis": "El turno es un pase con segmentos; la agenda es un tablero que se reordena y marca cada cambio.",
+      "palette": ["#ffffff", "#111111", "#ff5a1f", "#e9ecef"],
+      "materials": ["segmentos con troquel", "cifras tabulares", "bloque escaneable"],
+      "viewport": "Mis turnos como pases (fecha, hora, profesional, seña, código); agenda como tablero por hora.",
+      "case": "Gana en claridad de producto (cambios que quedan encendidos hasta verlos); pierde en identificación: no habla de estética.",
+      "risk": "Se siente aeropuerto, frío para un centro de belleza chico.",
+      "comp": ".impeccable/mocks/decision/challenger-boarding-pass.png",
+      "hero": "https://impeccable.style/worlds/cards/vernacular-ephemera-boarding-pass-and-gate-board-hero.webp"
+    },
+    {
+      "id": "challenger-exposure",
+      "label": "Registro de exposición",
+      "verdict": "declined",
+      "lineage": "Fichas de laboratorio fotográfico",
+      "thesis": "Hojas translúcidas superpuestas con escala de zonas.",
+      "palette": ["#e9e7e1", "#2a2a2a", "#c2187a"],
+      "materials": ["papel vegetal", "rayado de densidad"],
+      "viewport": "Hojas superpuestas que se deslizan.",
+      "case": "Ni las clientas ni el equipo se reconocen en un laboratorio de revelado.",
+      "kept": "Neutros de una sola escala escalonada.",
+      "risk": "Opaco para una tarea simple.",
+      "hero": "https://impeccable.style/worlds/cards/operate-b-exposure-record-zone-sheets-hero.webp"
+    },
+    {
+      "id": "challenger-mono",
+      "label": "Producto monocromo",
+      "verdict": "declined",
+      "lineage": "Sitios de software monocromos",
+      "thesis": "Escala neutra y un acento, cada afirmación con su prueba.",
+      "palette": ["#fafafa", "#0a0a0a", "#5b5bd6"],
+      "materials": ["grilla estricta", "capturas"],
+      "viewport": "Afirmación y prueba alternadas.",
+      "case": "Claridad pareja, pero sin identidad propia para un centro de estética.",
+      "kept": "Cada regla con su número concreto al lado.",
+      "risk": "Igual a cualquier SaaS.",
+      "hero": "https://impeccable.style/worlds/cards/digital-design-canon-monochrome-product-marketing-hero.webp"
+    },
+    {
+      "id": "challenger-botanical",
+      "label": "Folio botánico",
+      "verdict": "declined",
+      "lineage": "Láminas botánicas por estación",
+      "thesis": "Una planta en cinco láminas a escala fija.",
+      "palette": ["#f1ead8", "#3d5a3a", "#b0302b"],
+      "materials": ["lámina grabada", "filetes sepia"],
+      "viewport": "Láminas alineadas en una base común.",
+      "case": "Bonito pero ornamental: no ordena turnos ni fichas.",
+      "kept": "Antes/después a la misma escala y fondo.",
+      "risk": "Decorativo, crema otra vez.",
+      "hero": "https://impeccable.style/worlds/cards/editorial-sequence-montage-botanical-folio-season-hero.webp"
+    },
+    {
+      "id": "challenger-airport",
+      "label": "Señalética de aeropuerto",
+      "verdict": "declined",
+      "lineage": "Carteles amarillos de terminal",
+      "thesis": "Una decisión por cartel, el destino siempre a la vista.",
+      "palette": ["#ffcc00", "#111111", "#ffffff"],
+      "materials": ["paneles colgantes", "pictogramas"],
+      "viewport": "La próxima decisión en grande.",
+      "case": "Útil para la reserva en el celular, ajeno al mundo del centro.",
+      "kept": "Una decisión por vez en el celular, lo elegido siempre arriba.",
+      "risk": "Amarillo de tránsito en un centro de belleza.",
+      "hero": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-terminal-yellow-wayfinding-hero.webp"
+    },
+    {
+      "id": "challenger-crouwel",
+      "label": "Grilla Crouwel",
+      "verdict": "declined",
+      "lineage": "Especímenes tipográficos de Wim Crouwel",
+      "thesis": "La grilla de construcción a la vista como diseño.",
+      "palette": ["#ffffff", "#1a1a1a", "#2d5bd7"],
+      "materials": ["papel milimetrado", "letras construidas"],
+      "viewport": "Letras monumentales armadas en celdas.",
+      "case": "Rigor admirable, sin vínculo con la clienta.",
+      "kept": "La agenda como grilla real de 15 minutos.",
+      "risk": "Frío y técnico.",
+      "hero": "https://impeccable.style/worlds/cards/crouwel-grid-specimen-hero.webp"
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "buildPath": { "value": "code", "toggle": false },
+  "canon": true,
+  "canonCard": {
+    "label": "El estándar del rubro",
+    "thesis": "Lo que hacen las apps de reservas de belleza, bien hecho.",
+    "palette": ["#ffffff", "#1b1b2f", "#7c5cff", "#f4f2ff"],
+    "materials": ["tarjetas redondeadas", "fotos de tratamientos", "violeta de marca"],
+    "viewport": "Lista de servicios con foto, calendario de días y botón violeta de reservar.",
+    "risk": "Igual a la competencia por definición."
+  },
+  "steer": true
+}

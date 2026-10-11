@@ -16,13 +16,13 @@ export function CalendarLinkPage() {
   return (
     <Card className="mx-auto max-w-lg">
       <PageHeader title="Agregá tu turno al calendario" subtitle={data.title} />
-      <p className="mb-6 font-serif text-xl capitalize text-ink-strong">{dateTimeLabel(data.startAt)} a {timeLabel(data.endAt)}</p>
+      <p className="mb-6 text-[1.6rem] leading-tight first-letter:uppercase text-ink-strong">{dateTimeLabel(data.startAt)} a {timeLabel(data.endAt)}</p>
       {data.status === 'CANCELED' ? (
-        <p className="rounded-md bg-red-bg px-3 py-2 text-red-fg">Este turno fue cancelado.</p>
+        <p className="rounded-lg bg-red-bg px-3.5 py-2.5 text-red-fg">Este turno fue cancelado.</p>
       ) : (
         <div className="flex flex-wrap gap-2">
-          <a href={data.googleUrl} target="_blank" rel="noreferrer" className="rounded-md bg-ink-strong px-4 py-2 text-sm font-medium text-white">Google Calendar</a>
-          <a href={data.icsUrl} className="rounded-md border border-line px-4 py-2 text-sm">Apple, Outlook u otro (.ics)</a>
+          <a href={data.googleUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-peach px-4 py-2 text-[15px] font-medium text-n8 transition hover:bg-[#b07a7d]">Google Calendar</a>
+          <a href={data.icsUrl} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-line bg-surface px-4 py-2 text-[15px] text-ink-strong transition hover:border-n4">Apple, Outlook u otro (.ics)</a>
         </div>
       )}
     </Card>

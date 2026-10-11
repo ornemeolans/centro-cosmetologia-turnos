@@ -3,10 +3,12 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Field, FormError } from '../../components/Field';
 import { SlotPicker } from '../../components/SlotPicker';
-import { Badge, Button, Card, Dialog, Empty, PageHeader, Select, Textarea } from '../../components/ui';
+import { ArrowLeft, ArrowRight, Plus } from '../../components/icons';
+import { Badge, Button, Card, Dialog, Empty, Eyebrow, PageHeader, Select, Textarea } from '../../components/ui';
 import { api, send } from '../../lib/api';
 import { errorMessage, useMe } from '../../lib/auth';
 import { addDays, dayLabel, isoDay, money, statusLabel, timeLabel } from '../../lib/format';
+import { lineFor } from '../../lib/lines';
 import type { ApptDto } from '../ClientDashboard';
 
 type AgendaAppt = ApptDto & { blockedUntil: string; client: { id: string; name: string; phone: string | null; isReliable: boolean } };
@@ -35,17 +37,19 @@ export function AgendaPage() {
         action={
           <div className="flex flex-wrap gap-2">
             {me?.user.role !== 'PROFESSIONAL' && <Button variant="secondary" onClick={() => setFirstVisitOpen(true)}>Primera vez</Button>}
-            <Button onClick={() => setNewOpen({})}>Nuevo turno</Button>
+            <Button onClick={() => setNewOpen({})}><Plus /> Nuevo turno</Button>
           </div>
         }
       />
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="secondary" aria-label="Día anterior" onClick={() => setDate(addDays(date, -1))}>←</Button>
-        <Button variant="secondary" onClick={() => setDate(isoDay())}>Hoy</Button>
-        <Button variant="secondary" aria-label="Día siguiente" onClick={() => setDate(addDays(date, 1))}>→</Button>
-        <input type="date" aria-label="Fecha" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm" />
+        <div className="flex rounded-xl bg-sunken p-1">
+          <Button variant="ghost" aria-label="Día anterior" onClick={() => setDate(addDays(date, -1))}><ArrowLeft /></Button>
+          <Button variant="ghost" className="font-mono text-[13px]" onClick={() => setDate(isoDay())}>Hoy</Button>
+          <Button variant="ghost" aria-label="Día siguiente" onClick={() => setDate(addDays(date, 1))}><ArrowRight /></Button>
+        </div>
+        <input type="date" aria-label="Fecha" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} className="min-h-11 rounded-lg border border-line bg-surface px-3 font-mono text-[13px] text-ink-strong hover:border-n4" />
         {seesAll && (
-          <select aria-label="Profesional" value={professionalId} onChange={(e) => setProfessionalId(e.target.value)} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm">
+          <select aria-label="Profesional" value={professionalId} onChange={(e) => setProfessionalId(e.target.value)} className="min-h-11 rounded-lg border border-line bg-surface px-3 text-[15px] text-ink-strong hover:border-n4">
             <option value="">Todas las profesionales</option>
             {pros.data?.professionals.map((p) => <option key={p.id} value={p.id}>{p.displayName}</option>)}
           </select>
@@ -70,10 +74,10 @@ export function AgendaPage() {
 function AgendaColumn({ column, showName }: { column: Column; showName: boolean }) {
   return (
     <Card>
-      {showName && <h2 className="mb-1 text-xl">{column.professional.displayName}</h2>}
-      <p className="mb-4 font-mono text-xs text-muted">
+      {showName && <h2 className="mb-2 text-[1.6rem]">{column.professional.displayName}</h2>}
+      <Eyebrow dot={column.windows.length ? 'bg-olive' : 'bg-n4'} className="mb-5 text-muted">
         {column.windows.length ? `Atiende ${column.windows.map((w) => `${w.start}–${w.end}`).join(', ')}` : 'No atiende este día'}
-      </p>
+      </Eyebrow>
       {column.appointments.length === 0 ? <Empty>Sin turnos.</Empty> : (
         <ol className="space-y-3">{column.appointments.map((a) => <AgendaItem key={a.id} appt={a} />)}</ol>
       )}
@@ -90,12 +94,15 @@ function AgendaItem({ appt }: { appt: AgendaAppt }) {
   const started = new Date(appt.startAt) <= new Date();
   const canAttend = me?.user.role !== 'RECEPTION' && appt.status === 'CONFIRMED' && started;
   const s = statusLabel[appt.status];
+  const line = lineFor(appt.treatments[0]?.id ?? appt.id);
+  const inactive = ['CANCELED', 'NO_SHOW', 'EXPIRED', 'RESCHEDULED'].includes(appt.status);
 
   return (
-    <li className="rounded-lg border border-line p-3">
+    <li className={`relative overflow-hidden rounded-xl border py-3 pl-5 pr-3 ${inactive ? 'border-line bg-surface opacity-60' : `${line.border} ${line.soft}`}`}>
+      <span className={`absolute inset-y-0 left-0 w-1.5 ${line.band}`} />
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="font-mono text-sm text-ink-strong">{timeLabel(appt.startAt)}–{timeLabel(appt.endAt)}</p>
+          <p className="font-mono text-[13px] text-ink-strong">{timeLabel(appt.startAt)}–{timeLabel(appt.endAt)}</p>
           <Link to={`/fichas/${appt.client.id}`} className="font-medium text-ink-strong underline-offset-2 hover:underline">{appt.client.name}</Link>
           <p className="text-sm text-muted">{appt.treatments.map((t) => t.name).join(' + ')}</p>
         </div>
@@ -105,14 +112,14 @@ function AgendaItem({ appt }: { appt: AgendaAppt }) {
           <Badge tone={s?.tone}>{s?.text}</Badge>
         </div>
       </div>
-      {appt.depositPaidCents > 0 && <p className="mt-1 text-xs text-muted">Seña {money(appt.depositPaidCents)}</p>}
+      {appt.depositPaidCents > 0 && <p className="mt-1 font-mono text-[12px] text-muted">Seña {money(appt.depositPaidCents)}</p>}
       {appt.status === 'CONFIRMED' && (
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {canAttend && <Button variant="secondary" className="px-2.5 py-1" onClick={() => attend.mutate('COMPLETED')}>Realizado</Button>}
-          {canAttend && <Button variant="secondary" className="px-2.5 py-1" onClick={() => attend.mutate('NO_SHOW')}>Ausente</Button>}
-          {!started && appt.rules?.onTime && <Button variant="ghost" className="px-2.5 py-1" onClick={() => setDialog('reschedule')}>Reprogramar</Button>}
-          {!started && appt.rules?.onTime && <Button variant="ghost" className="px-2.5 py-1" onClick={() => setDialog('cancel')}>Cancelar</Button>}
-          {!started && !appt.rules?.onTime && me?.user.role === 'OWNER' && <Button variant="ghost" className="px-2.5 py-1" onClick={() => setDialog('force')}>Cambio fuera de plazo</Button>}
+          {canAttend && <Button variant="secondary" className="min-h-9 px-3 py-1" onClick={() => attend.mutate('COMPLETED')}>Realizado</Button>}
+          {canAttend && <Button variant="secondary" className="min-h-9 px-3 py-1" onClick={() => attend.mutate('NO_SHOW')}>Ausente</Button>}
+          {!started && appt.rules?.onTime && <Button variant="ghost" className="min-h-9 px-3 py-1" onClick={() => setDialog('reschedule')}>Reprogramar</Button>}
+          {!started && appt.rules?.onTime && <Button variant="ghost" className="min-h-9 px-3 py-1" onClick={() => setDialog('cancel')}>Cancelar</Button>}
+          {!started && !appt.rules?.onTime && me?.user.role === 'OWNER' && <Button variant="ghost" className="min-h-9 px-3 py-1" onClick={() => setDialog('force')}>Cambio fuera de plazo</Button>}
         </div>
       )}
       <FormError>{attend.isError ? errorMessage(attend.error) : undefined}</FormError>
@@ -212,7 +219,7 @@ function NewAppointment({ initialRecordId, onDone }: { initialRecordId?: string;
       {!initialRecordId && (
         <div className="space-y-2">
           <Field label="Buscar clienta" placeholder="Nombre, email o teléfono" value={q} onChange={(e) => setQ(e.target.value)} />
-          <ul className="max-h-40 divide-y divide-line overflow-y-auto rounded-md border border-line">
+          <ul className="max-h-40 divide-y divide-line overflow-y-auto rounded-lg border border-line">
             {records.data?.records.map((r) => (
               <li key={r.id}>
                 <button type="button" onClick={() => setRecordId(r.id)} aria-pressed={recordId === r.id}

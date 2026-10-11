@@ -1,5 +1,8 @@
-import { Link, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { BrandMark, Close, Menu } from './components/icons';
 import { RequireRole } from './components/RequireRole';
+import { Button } from './components/ui';
 import { homeFor, useLogout, useMe, type Role } from './lib/auth';
 import { BookingWizard } from './pages/BookingWizard';
 import { CalendarLinkPage } from './pages/CalendarLinkPage';
@@ -31,41 +34,65 @@ const navFor: Record<Role, { to: string; label: string }[]> = {
   ],
 };
 
+const CENTER_NAME = import.meta.env.VITE_CENTER_NAME ?? 'Centro de Cosmetología';
+
 function Header() {
   const { data: me } = useMe();
   const logout = useLogout();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [open, setOpen] = useState(false);
+  useEffect(() => setOpen(false), [location.pathname]);
+
+  const links = me ? navFor[me.user.role] : [];
+  const linkClass = ({ isActive }: { isActive: boolean }) =>
+    `rounded-lg px-3 py-2 transition-colors ${isActive ? 'bg-daisy text-ink-strong' : 'text-muted hover:text-ink-strong'}`;
+  const signOut = () => logout.mutate(undefined, { onSuccess: () => navigate('/') });
+
   return (
-    <header className="sticky top-0 z-10 border-b border-line bg-canvas/85 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3">
-        <Link to={me ? homeFor(me.user.role) : '/'} className="font-serif text-lg text-ink-strong">Centro de Cosmetología</Link>
+    <header className="sticky top-0 z-20 px-3 pt-3 sm:px-5">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 rounded-2xl border border-line/70 bg-surface py-2 pl-4 pr-2">
+        <Link to={me ? homeFor(me.user.role) : '/'} className="flex items-center gap-2.5 text-[17px] font-medium tracking-tight text-ink-strong">
+          <BrandMark className="size-7" />
+          {CENTER_NAME}
+        </Link>
         {me ? (
-          <nav className="flex flex-wrap items-center gap-1 text-sm" aria-label="Principal">
-            {navFor[me.user.role].map((n) => (
-              <NavLink key={n.to} to={n.to} className={({ isActive }) => `rounded-md px-2.5 py-1.5 ${isActive ? 'bg-sunken text-ink-strong' : 'text-muted hover:text-ink-strong'}`}>
-                {n.label}
-              </NavLink>
-            ))}
-            <span className="mx-2 hidden h-4 w-px bg-line sm:block" />
-            <span className="hidden text-muted sm:inline">{me.user.name}</span>
-            <button type="button" className="rounded-md px-2.5 py-1.5 text-muted hover:text-ink-strong"
-              onClick={() => logout.mutate(undefined, { onSuccess: () => navigate('/') })}>
-              Salir
+          <>
+            <nav className="hidden items-center gap-0.5 font-mono text-[13px] lg:flex" aria-label="Principal">
+              {links.map((n) => <NavLink key={n.to} to={n.to} className={linkClass}>{n.label}</NavLink>)}
+              <span className="mx-2 h-5 w-px bg-line" />
+              <span className="max-w-40 truncate px-2 text-muted">{me.user.name}</span>
+              <Button variant="ghost" onClick={signOut}>Salir</Button>
+            </nav>
+            <button type="button" aria-label="Menú" aria-expanded={open} onClick={() => setOpen(!open)}
+              className="grid size-11 place-items-center rounded-lg bg-peach text-n8 lg:hidden">
+              {open ? <Close /> : <Menu />}
             </button>
-          </nav>
+          </>
         ) : (
-          <Link to="/ingresar" className="text-sm text-muted hover:text-ink-strong">Ingresar</Link>
+          <Link to="/ingresar" className="inline-flex min-h-10 items-center rounded-lg bg-peach px-4 text-[15px] font-medium text-n8 hover:bg-[#b07a7d]">
+            Ingresar
+          </Link>
         )}
       </div>
+      {me && open && (
+        <nav aria-label="Principal" className="mx-auto mt-2 grid max-w-6xl gap-1 rounded-2xl border border-line/70 bg-surface p-2 text-[16px] lg:hidden">
+          {links.map((n) => <NavLink key={n.to} to={n.to} className={linkClass}>{n.label}</NavLink>)}
+          <div className="mt-1 flex items-center justify-between border-t border-line px-3 pt-2">
+            <span className="truncate text-sm text-muted">{me.user.name}</span>
+            <Button variant="ghost" onClick={signOut}>Salir</Button>
+          </div>
+        </nav>
+      )}
     </header>
   );
 }
 
 export function App() {
   return (
-    <div className="min-h-dvh">
+    <div className="flex min-h-dvh flex-col">
       <Header />
-      <main className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-5 sm:py-16">
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/ingresar" element={<LoginPage />} />
@@ -90,10 +117,16 @@ export function App() {
           <Route path="*" element={<p className="text-muted">Página no encontrada.</p>} />
         </Routes>
       </main>
-      <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-wrap gap-x-6 gap-y-1 px-4 py-6 text-xs text-muted">
-          <Link to="/privacidad" className="hover:text-ink-strong">Política de privacidad</Link>
-          <Link to="/terminos" className="hover:text-ink-strong">Términos y condiciones</Link>
+      <footer className="px-3 sm:px-5">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-t-2xl bg-panel px-5 py-6 font-mono text-[13px] text-daisy/75">
+          <span className="flex items-center gap-2.5 text-daisy">
+            <BrandMark className="size-5" />
+            {CENTER_NAME}
+          </span>
+          <span className="flex flex-wrap gap-x-6 gap-y-1">
+            <Link to="/privacidad" className="hover:text-daisy">Política de privacidad</Link>
+            <Link to="/terminos" className="hover:text-daisy">Términos y condiciones</Link>
+          </span>
         </div>
       </footer>
     </div>

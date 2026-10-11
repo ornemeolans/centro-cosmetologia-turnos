@@ -127,7 +127,7 @@ function Stat({ label, value, note }: { label: string; value: string; note: stri
   return (
     <Card>
       <p className="text-xs uppercase tracking-wider text-muted">{label}</p>
-      <p className="mt-2 font-serif text-3xl text-ink-strong">{value}</p>
+      <p className="mt-2 font-mono text-3xl text-ink-strong">{value}</p>
       <p className="mt-1 text-xs text-muted">{note}</p>
     </Card>
   );

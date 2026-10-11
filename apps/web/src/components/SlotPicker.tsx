@@ -46,7 +46,7 @@ export function SlotPicker({
         <div className="relative flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1" role="group" aria-label="Días">
           {days.map((d) => (
             <button key={d} type="button" onClick={() => setDate(d)} aria-pressed={d === date} disabled={d < first}
-              className="min-w-16 rounded-md border border-line bg-surface px-2 py-1.5 text-center text-xs capitalize disabled:opacity-40 aria-pressed:border-ink-strong aria-pressed:bg-ink-strong aria-pressed:text-white">
+              className="min-h-11 min-w-[4.5rem] rounded-lg border border-line bg-surface px-2 py-2 text-center font-mono text-[12px] first-letter:uppercase transition hover:border-n4 disabled:opacity-40 aria-pressed:border-panel aria-pressed:bg-panel aria-pressed:text-daisy">
               {shortDay(`${d}T12:00:00-03:00`)}
             </button>
           ))}
@@ -54,7 +54,7 @@ export function SlotPicker({
         <label className="relative shrink-0 text-xs text-muted">
           <span className="sr-only">Otro día</span>
           <input type="date" value={date} min={first} onChange={(e) => e.target.value && setDate(e.target.value)}
-            className="rounded-md border border-line bg-surface px-2 py-1" />
+            className="min-h-11 rounded-lg border border-line bg-surface px-2 py-1 font-mono" />
         </label>
       </div>
 
@@ -67,7 +67,7 @@ export function SlotPicker({
           {data.slots.map((s) => (
             <li key={s.start}>
               <button type="button" onClick={() => onChange(s.start)} aria-pressed={value === s.start}
-                className="w-full rounded-md border border-line bg-surface px-2 py-2 font-mono text-sm hover:border-ink/30 aria-pressed:border-ink-strong aria-pressed:bg-ink-strong aria-pressed:text-white">
+                className="min-h-11 w-full rounded-lg border border-line bg-surface px-2 py-2 font-mono text-sm transition hover:border-n4 aria-pressed:border-peach aria-pressed:bg-peach aria-pressed:text-n8">
                 {timeLabel(s.start)}
               </button>
             </li>

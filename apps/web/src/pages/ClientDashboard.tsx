@@ -4,10 +4,12 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Field, FormError, SubmitButton } from '../components/Field';
 import { SlotPicker } from '../components/SlotPicker';
-import { Badge, Button, Card, Dialog, Empty, PageHeader, Section, Select } from '../components/ui';
+import { ArrowRight, Calendar, Download } from '../components/icons';
+import { Badge, Button, Card, Datum, Dialog, Empty, PageHeader, Section, Select } from '../components/ui';
 import { api, CENTER_WHATSAPP, send } from '../lib/api';
 import { errorMessage, useMe } from '../lib/auth';
 import { addDays, dateTimeLabel, isoDay, money, statusLabel, timeLabel } from '../lib/format';
+import { lineFor } from '../lib/lines';
 
 export interface ApptDto {
   id: string;
@@ -34,7 +36,7 @@ export function ClientDashboard() {
   return (
     <div className="space-y-12">
       <PageHeader title={`Hola, ${me.record.firstName}`} subtitle="Tus turnos, tu saldo y las recomendaciones de tu cosmetóloga."
-        action={<Link to="/reservar" className="rounded-md bg-ink-strong px-4 py-2 text-sm font-medium text-white hover:bg-[#333333]">Reservar turno</Link>} />
+        action={<Link to="/reservar" className="inline-flex min-h-12 items-center gap-3 rounded-lg bg-peach px-5 font-medium text-n8 transition hover:bg-[#b07a7d] active:scale-[0.98]">Reservar turno <ArrowRight /></Link>} />
       {me.needsPhone && <PhoneForm />}
       <Upcoming />
       <div className="grid gap-12 lg:grid-cols-2">
@@ -75,10 +77,16 @@ function Past() {
   if (!data?.appointments.length) return null;
   return (
     <Section title="Historial">
-      <ul className="divide-y divide-line text-sm">
+      <ul className="divide-y divide-line overflow-hidden rounded-[20px] border border-line/70 bg-surface">
         {data.appointments.map((a) => (
-          <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-            <span className="capitalize">{dateTimeLabel(a.startAt)} · {a.treatments.map((t) => t.name).join(' + ')} · {a.professional.displayName}</span>
+          <li key={a.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+            <span className="flex min-w-0 items-center gap-3">
+              <span className={`h-8 w-1.5 shrink-0 rounded-full ${lineFor(a.treatments[0]?.id ?? a.id).band}`} />
+              <span>
+                <span className="block text-ink-strong">{a.treatments.map((t) => t.name).join(' + ')}</span>
+                <span className="font-mono text-[12px] first-letter:uppercase text-muted">{dateTimeLabel(a.startAt)} · {a.professional.displayName}</span>
+              </span>
+            </span>
             <Badge tone={statusLabel[a.status]?.tone}>{statusLabel[a.status]?.text ?? a.status}</Badge>
           </li>
         ))}
@@ -101,12 +109,20 @@ function AppointmentCard({ appt }: { appt: ApptDto }) {
     description: 'Turno del centro de cosmetología', location: '', start: new Date(appt.startAt), end: new Date(appt.endAt),
   });
 
+  const line = lineFor(appt.treatments[0]?.id ?? appt.id);
+  const minutes = appt.treatments.reduce((s, t) => s + t.durationMin, 0);
+
   return (
-    <Card>
+    <Card className="relative overflow-hidden pt-7 sm:pt-9">
+      <span className={`band-enter absolute inset-x-0 top-0 h-2 ${line.band}`} />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="font-serif text-xl capitalize text-ink-strong">{dateTimeLabel(appt.startAt)}</p>
-          <p className="text-sm text-muted">{treatments} · {appt.professional.displayName}</p>
+          <p className="text-[1.6rem] first-letter:uppercase leading-tight text-ink-strong">{dateTimeLabel(appt.startAt)}</p>
+          <p className="mt-1 text-muted">{treatments} · {appt.professional.displayName}</p>
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1">
+            <Datum dot={line.band}>{minutes} min</Datum>
+            {appt.depositPaidCents > 0 && <Datum dot="bg-olive">Seña {money(appt.depositPaidCents)}</Datum>}
+          </div>
         </div>
         <Badge tone={statusLabel[appt.status]?.tone}>{statusLabel[appt.status]?.text}</Badge>
       </div>
@@ -121,16 +137,16 @@ function AppointmentCard({ appt }: { appt: ApptDto }) {
 
       {appt.status === 'CONFIRMED' && appt.rules && (
         <>
-          <p className="mt-3 text-xs text-muted">
+          <p className="mt-5 border-t border-line pt-4 text-sm text-muted">
             {appt.rules.onTime
-              ? <>Podés cambiarlo o cancelarlo sin perder la seña hasta el <span className="capitalize">{dateTimeLabel(appt.rules.deadline)}</span>.</>
+              ? <>Podés cambiarlo o cancelarlo sin perder la seña hasta el <span className="inline-block first-letter:uppercase">{dateTimeLabel(appt.rules.deadline)}</span>.</>
               : 'Ya pasó el plazo para cambios: si cancelás, la seña no se reintegra.'}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <a href={google} target="_blank" rel="noreferrer" className="rounded-md border border-line px-3 py-1.5 text-sm hover:bg-sunken">Google Calendar</a>
-            <a href={`/api/v1/appointments/${appt.id}/calendar.ics`} className="rounded-md border border-line px-3 py-1.5 text-sm hover:bg-sunken">Descargar .ics</a>
-            {appt.rules.canReschedule && <Button variant="secondary" className="py-1.5" onClick={() => setDialog('reschedule')}>Reprogramar</Button>}
-            <Button variant="ghost" className="py-1.5" onClick={() => setDialog('cancel')}>Cancelar</Button>
+            <a href={google} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line px-3.5 text-[15px] text-ink-strong transition hover:border-n4"><Calendar /> Google Calendar</a>
+            <a href={`/api/v1/appointments/${appt.id}/calendar.ics`} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line px-3.5 text-[15px] text-ink-strong transition hover:border-n4"><Download /> Descargar .ics</a>
+            {appt.rules.canReschedule && <Button variant="dark" onClick={() => setDialog('reschedule')}>Reprogramar</Button>}
+            <Button variant="ghost" onClick={() => setDialog('cancel')}>Cancelar</Button>
           </div>
         </>
       )}
@@ -180,9 +196,9 @@ function CancelForm({ appt, onDone }: { appt: ApptDto; onDone: () => void }) {
       {appt.depositPaidCents === 0 ? (
         <p className="text-sm">Este turno no tiene seña registrada.</p>
       ) : late ? (
-        <p className="rounded-md bg-red-bg px-3 py-2 text-sm text-red-fg">Ya pasó el plazo de 2 días hábiles: si cancelás ahora, la seña de {money(appt.depositPaidCents)} no se reintegra.</p>
+        <p className="rounded-lg bg-red-bg px-3.5 py-2.5 text-sm text-red-fg">Ya pasó el plazo de 2 días hábiles: si cancelás ahora, la seña de {money(appt.depositPaidCents)} no se reintegra.</p>
       ) : (
-        <p className="rounded-md bg-green-bg px-3 py-2 text-sm text-green-fg">La seña de {money(appt.depositPaidCents)} queda como saldo a favor con {appt.professional.displayName}: tenés 30 días para usarla en una nueva reserva.</p>
+        <p className="rounded-lg bg-green-bg px-3.5 py-2.5 text-sm text-green-fg">La seña de {money(appt.depositPaidCents)} queda como saldo a favor con {appt.professional.displayName}: tenés 30 días para usarla en una nueva reserva.</p>
       )}
       <FormError>{cancel.isError ? errorMessage(cancel.error) : undefined}</FormError>
       <div className="flex gap-2">
@@ -203,9 +219,9 @@ function Recommendations() {
       {data?.recommendations.length === 0 && <Empty>Tu cosmetóloga todavía no dejó recomendaciones.</Empty>}
       <ul className="space-y-4">
         {data?.recommendations.map((r) => (
-          <li key={r.id} className="border-l-2 border-line pl-4">
-            <p className="whitespace-pre-line">{r.body}</p>
-            <p className="mt-1 text-xs text-muted">{r.professional} · <span className="capitalize">{dateTimeLabel(r.createdAt)}</span></p>
+          <li key={r.id} className="rounded-[20px] border border-line/70 bg-surface p-5">
+            <p className="whitespace-pre-line text-ink-strong">{r.body}</p>
+            <p className="mt-3 font-mono text-[12px] text-muted">{r.professional} · <span className="inline-block first-letter:uppercase">{dateTimeLabel(r.createdAt)}</span></p>
           </li>
         ))}
       </ul>
@@ -223,11 +239,11 @@ function Credits() {
     <Section title="Saldo a favor">
       <ul className="space-y-2">
         {data.credits.map((c) => (
-          <li key={c.professionalId} className="flex items-baseline justify-between gap-4">
+          <li key={c.professionalId} className="flex items-baseline justify-between gap-4 rounded-[20px] bg-panel px-5 py-4 text-daisy">
             <span>{c.professional}</span>
             <span className="text-right">
-              <span className="font-mono text-ink-strong">{money(c.amountCents)}</span>
-              <span className="block text-xs text-muted">Reservá antes del <span className="capitalize">{dateTimeLabel(c.nextExpiry)}</span></span>
+              <span className="font-mono text-xl text-golden">{money(c.amountCents)}</span>
+              <span className="block font-mono text-[12px] text-daisy/60">Reservá antes del <span className="inline-block first-letter:uppercase">{dateTimeLabel(c.nextExpiry)}</span></span>
             </span>
           </li>
         ))}
@@ -290,7 +306,7 @@ function PhoneForm() {
     save.mutate();
   }
   return (
-    <form onSubmit={onSubmit} className="space-y-3 rounded-xl border border-yellow-bg bg-yellow-bg/60 p-5">
+    <form onSubmit={onSubmit} className="space-y-3 rounded-[20px] border border-golden bg-yellow-bg/70 p-5 sm:p-7">
       <p className="text-sm">Dejanos tu celular para enviarte las confirmaciones y recordatorios por WhatsApp.</p>
       <Field label="Celular" type="tel" autoComplete="tel" required value={phone} onChange={(e) => setPhone(e.target.value)}
         placeholder="351 732 6453" hint="Con código de área, sin el 0 ni el 15." />
@@ -317,13 +333,13 @@ function RecordNotLinked({ email }: { email: string }) {
 
   return (
     <section className="max-w-prose space-y-6">
-      <h1 className="text-3xl">No encontramos tu ficha</h1>
+      <h1 className="text-[2.4rem] leading-[1.05]">No encontramos tu ficha<span className="text-peach">.</span></h1>
       <p className="text-muted">
         Entraste con <strong className="text-ink-strong">{email}</strong>, pero tu cosmetóloga tiene cargado otro email. Pedile que lo
         actualice y la próxima vez que entres vas a ver tus turnos.
       </p>
       {request.isSuccess ? (
-        <p className="rounded-md bg-green-bg px-3 py-2 text-green-fg">Listo, le avisamos por email.</p>
+        <p className="rounded-lg bg-green-bg px-3.5 py-2.5 text-green-fg">Listo, le avisamos por email.</p>
       ) : (
         <form onSubmit={onSubmit} className="space-y-3">
           <Select label="Tu cosmetóloga" required value={professionalId} onChange={(e) => setProfessionalId(e.target.value)}>

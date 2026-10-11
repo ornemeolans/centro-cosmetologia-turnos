@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { businessDayIso, login } from './helpers';
+import { businessDayIso, login, openNav } from './helpers';
 
 test('recepción: perfil de primera vez y turno destacado en la agenda', async ({ page }, testInfo) => {
   await login(page, 'recepcion');
@@ -32,7 +32,7 @@ test('recepción: perfil de primera vez y turno destacado en la agenda', async (
 
 test('profesional: abre la ficha y agrega una entrada a la historia', async ({ page }, testInfo) => {
   await login(page, 'ana@centro.test');
-  await page.getByRole('link', { name: 'Fichas' }).click();
+  await openNav(page, 'Fichas');
   await page.getByLabel('Buscar').fill(`lucia-${testInfo.project.name}`);
   await page.getByRole('link', { name: /Gómez, Lucía/ }).click();
   await expect(page.getByRole('heading', { name: 'Lucía Gómez' })).toBeVisible();
@@ -46,7 +46,7 @@ test('profesional: abre la ficha y agrega una entrada a la historia', async ({ p
 
 test('dueña: invita una profesional', async ({ page }, testInfo) => {
   await login(page, 'duena@centro.test');
-  await page.getByRole('link', { name: 'Administración' }).click();
+  await openNav(page, 'Administración');
   const email = `bea-${testInfo.project.name}@centro.test`;
   await page.getByLabel('Nombre').first().fill(`Bea ${testInfo.project.name}`);
   await page.getByLabel('Email').first().fill(email);

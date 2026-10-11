@@ -126,7 +126,7 @@ function Appointments({ data }: { data: RecordDetail }) {
       <ul className="divide-y divide-line">
         {data.appointments.map((a) => (
           <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm">
-            <span className="capitalize">{dateTimeLabel(a.startAt)} · {a.treatments.join(' + ')} · {a.professional}</span>
+            <span className="inline-block first-letter:uppercase">{dateTimeLabel(a.startAt)} · {a.treatments.join(' + ')} · {a.professional}</span>
             <Badge tone={statusLabel[a.status]?.tone}>{statusLabel[a.status]?.text ?? a.status}</Badge>
           </li>
         ))}
@@ -149,7 +149,7 @@ function Entries({ data, onSaved }: { data: RecordDetail; onSaved: () => void })
       <ol className="space-y-4">
         {data.entries?.map((e) => (
           <li key={e.id} className="border-l-2 border-line pl-4">
-            <p className="text-xs text-muted capitalize">{dateTimeLabel(e.createdAt)}</p>
+            <p className="text-xs text-muted first-letter:uppercase">{dateTimeLabel(e.createdAt)}</p>
             <p className="whitespace-pre-line">{e.notes}</p>
           </li>
         ))}
@@ -171,7 +171,7 @@ function Recommendations({ data, onSaved }: { data: RecordDetail; onSaved: () =>
       <ol className="space-y-4">
         {data.recommendations?.map((r) => (
           <li key={r.id} className="border-l-2 border-line pl-4">
-            <p className="text-xs text-muted capitalize">{dateTimeLabel(r.createdAt)}</p>
+            <p className="text-xs text-muted first-letter:uppercase">{dateTimeLabel(r.createdAt)}</p>
             <p className="whitespace-pre-line">{r.body}</p>
           </li>
         ))}
@@ -204,7 +204,7 @@ function Consents({ data, onSaved }: { data: RecordDetail; onSaved: () => void }
       <ul className="divide-y divide-line">
         {data.consents?.map((c) => (
           <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-            <span>{consentNames[c.type]} · {c.documentVersion} · <span className="capitalize">{dateTimeLabel(c.signedAt)}</span></span>
+            <span>{consentNames[c.type]} · {c.documentVersion} · <span className="inline-block first-letter:uppercase">{dateTimeLabel(c.signedAt)}</span></span>
             {c.revokedAt ? <Badge tone="red">Revocado</Badge> : (
               <Button variant="ghost" className="py-1" onClick={() => { if (confirm('¿Revocar este consentimiento?')) revoke.mutate(c.id); }}>Revocar</Button>
             )}
@@ -257,7 +257,7 @@ function Photos({ data, onSaved }: { data: RecordDetail; onSaved: () => void }) 
               <option value="ANTES">Antes</option>
               <option value="DESPUES">Después</option>
             </Select>
-            <label className="cursor-pointer rounded-md bg-ink-strong px-3.5 py-2 text-sm font-medium text-white">
+            <label className="cursor-pointer inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-peach px-4 py-2 text-[15px] font-medium text-n8 transition hover:bg-[#b07a7d]">
               Subir foto
               <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
             </label>

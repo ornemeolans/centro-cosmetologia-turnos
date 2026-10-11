@@ -22,8 +22,8 @@ export function SettingsPage() {
   return (
     <div className="space-y-12">
       <PageHeader title="Mi configuración" subtitle="Lo que ven las clientas al reservar con vos." />
-      {params.get('mercadopago') === 'ok' && <p className="rounded-md bg-green-bg px-3 py-2 text-green-fg">Mercado Pago conectado. Ya podés recibir reservas online.</p>}
-      {params.get('mercadopago') === 'error' && <p className="rounded-md bg-red-bg px-3 py-2 text-red-fg">No se pudo conectar Mercado Pago. Probá de nuevo.</p>}
+      {params.get('mercadopago') === 'ok' && <p className="rounded-lg bg-green-bg px-3.5 py-2.5 text-green-fg">Mercado Pago conectado. Ya podés recibir reservas online.</p>}
+      {params.get('mercadopago') === 'error' && <p className="rounded-lg bg-red-bg px-3.5 py-2.5 text-red-fg">No se pudo conectar Mercado Pago. Probá de nuevo.</p>}
       <MercadoPago connected={data.professional.mpConnected} />
       <Schedule initial={data.schedule} />
       <Exceptions items={data.exceptions} />
@@ -51,7 +51,7 @@ function MercadoPago({ connected }: { connected: boolean }) {
         </div>
         {connected
           ? <Button variant="secondary" onClick={() => { if (confirm('¿Desconectar Mercado Pago? Dejás de recibir reservas online.')) disconnect.mutate(); }}>Desconectar</Button>
-          : <a href="/api/v1/staff/me/mercadopago/connect" className="rounded-md bg-ink-strong px-4 py-2 text-sm font-medium text-white">Conectar Mercado Pago</a>}
+          : <a href="/api/v1/staff/me/mercadopago/connect" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-peach px-4 py-2 text-[15px] font-medium text-n8 transition hover:bg-[#b07a7d]">Conectar Mercado Pago</a>}
       </Card>
     </Section>
   );
