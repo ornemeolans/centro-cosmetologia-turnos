@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Field, FormError } from '../../components/Field';
-import { Badge, Button, Card, Dialog, Empty, PageHeader } from '../../components/ui';
+import { ArrowRight, Plus } from '../../components/icons';
+import { Badge, Button, Dialog, Empty, PageHeader } from '../../components/ui';
 import { api, ApiError, send } from '../../lib/api';
 import { errorMessage, useMe } from '../../lib/auth';
 
@@ -20,30 +21,34 @@ export function RecordsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Fichas" subtitle={me?.user.role === 'PROFESSIONAL' ? 'Tus clientas y las fichas que te compartieron.' : 'Todas las clientas del centro.'}
-        action={canCreate && <Button onClick={() => setOpen(true)}>Nueva ficha</Button>} />
+      <PageHeader title={me?.user.role === 'RECEPTION' ? 'Clientas' : 'Fichas'} subtitle={me?.user.role === 'PROFESSIONAL' ? 'Tus clientas y las fichas que te compartieron.' : 'Todas las clientas del centro.'}
+        action={canCreate && <Button onClick={() => setOpen(true)}><Plus /> Nueva ficha</Button>} />
       <Field label="Buscar" placeholder="Nombre, email o teléfono" value={q} onChange={(e) => setQ(e.target.value)} />
       {isLoading && <p className="text-muted">Cargando…</p>}
       {data?.records.length === 0 && <Empty>No hay fichas que coincidan.</Empty>}
-      <Card className="p-0 sm:p-0">
-        <ul className="divide-y divide-line">
+      {Boolean(data?.records.length) && <ul className="divide-y divide-line overflow-hidden rounded-[20px] border border-line/70 bg-surface">
           {data?.records.map((r) => (
             <li key={r.id}>
-              <Link to={`/fichas/${r.id}`} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 hover:bg-sunken">
-                <span>
-                  <span className="font-medium text-ink-strong">{r.lastName}, {r.firstName}</span>
-                  <span className="block text-sm text-muted">{r.email} · titular: {r.ownerProfessional.displayName}</span>
+              <Link to={`/fichas/${r.id}`} className="group flex flex-wrap items-center justify-between gap-3 px-5 py-4 transition-colors hover:bg-sunken">
+                <span className="flex min-w-0 items-center gap-4">
+                  <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-full bg-daisy font-mono text-[13px] text-ink-strong">
+                    {r.firstName[0]}{r.lastName[0]}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="font-medium text-ink-strong">{r.lastName}, {r.firstName}</span>
+                    <span className="block truncate font-mono text-[12px] text-muted">{r.email} · titular: {r.ownerProfessional.displayName}</span>
+                  </span>
                 </span>
-                <span className="flex gap-1">
+                <span className="flex items-center gap-1.5">
                   {r.status === 'PRIMERA_VEZ' && <Badge tone="blue">Primera vez</Badge>}
                   {r.isReliable && <Badge tone="green">Cumplidora</Badge>}
                   {!r.linked && <Badge>Sin cuenta</Badge>}
+                  <ArrowRight className="ml-2 text-muted transition-transform group-hover:translate-x-0.5" />
                 </span>
               </Link>
             </li>
           ))}
-        </ul>
-      </Card>
+      </ul>}
       <Dialog open={open} onClose={() => setOpen(false)} title="Nueva ficha">
         <NewRecordForm />
       </Dialog>

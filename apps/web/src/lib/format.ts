@@ -32,3 +32,7 @@ export const statusLabel: Record<string, { text: string; tone: 'gray' | 'red' | 
   EXPIRED: { text: 'Vencido', tone: 'gray' },
   RESCHEDULED: { text: 'Reprogramado', tone: 'gray' },
 };
+
+/** Iniciales para el avatar: solo palabras que empiezan con letra ("Marta (dueña)" → "M"). */
+export const initials = (name: string) =>
+  name.split(/\s+/).filter((w) => /^\p{L}/u.test(w)).map((w) => w[0].toUpperCase()).slice(0, 2).join('');

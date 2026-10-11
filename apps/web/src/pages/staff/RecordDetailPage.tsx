@@ -2,10 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { Field, FormError } from '../../components/Field';
-import { Badge, Button, Card, Empty, PageHeader, Select, Tabs, Textarea } from '../../components/ui';
+import { Badge, Button, Card, Datum, Empty, PageHeader, Select, Tabs, Textarea } from '../../components/ui';
 import { api, ApiError, send } from '../../lib/api';
 import { errorMessage, useMe } from '../../lib/auth';
-import { dateTimeLabel, money, statusLabel } from '../../lib/format';
+import { dateTimeLabel, initials, money, statusLabel } from '../../lib/format';
 
 interface RecordDetail {
   access: 'FULL' | 'CONTACT';
@@ -50,12 +50,18 @@ export function RecordDetailPage() {
     <div className="space-y-6">
       <PageHeader
         title={`${r.firstName} ${r.lastName}`}
-        subtitle={`${r.email}${r.phoneE164 ? ` · ${r.phoneE164}` : ''} · titular: ${r.ownerProfessional.displayName}`}
+        subtitle={
+          <span className="mt-1 flex flex-wrap gap-x-5 gap-y-1.5">
+            <Datum dot="bg-rose">{r.email}</Datum>
+            {r.phoneE164 && <Datum dot="bg-golden">{r.phoneE164}</Datum>}
+            <Datum dot="bg-olive">Titular: {r.ownerProfessional.displayName}</Datum>
+          </span>
+        }
         action={full && r.status === 'PRIMERA_VEZ' && (
           <Button onClick={() => complete.mutate()} disabled={complete.isPending}>Ficha completa: habilitar a la clienta</Button>
         )}
       />
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-1.5">
         {r.status === 'PRIMERA_VEZ' && <Badge tone="blue">Primera vez</Badge>}
         {r.isReliable && <Badge tone="green">Cumplidora</Badge>}
         <Badge tone={r.linked ? 'green' : 'gray'}>{r.linked ? 'Cuenta vinculada' : 'Pendiente de que entre con su email'}</Badge>
@@ -125,8 +131,11 @@ function Appointments({ data }: { data: RecordDetail }) {
     <Card className="p-0 sm:p-0">
       <ul className="divide-y divide-line">
         {data.appointments.map((a) => (
-          <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm">
-            <span className="inline-block first-letter:uppercase">{dateTimeLabel(a.startAt)} · {a.treatments.join(' + ')} · {a.professional}</span>
+          <li key={a.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+            <span>
+              <span className="block text-ink-strong">{a.treatments.join(' + ')}</span>
+              <span className="inline-block font-mono text-[12px] text-muted first-letter:uppercase">{dateTimeLabel(a.startAt)} · {a.professional}</span>
+            </span>
             <Badge tone={statusLabel[a.status]?.tone}>{statusLabel[a.status]?.text ?? a.status}</Badge>
           </li>
         ))}
@@ -146,11 +155,12 @@ function Entries({ data, onSaved }: { data: RecordDetail; onSaved: () => void })
         <Button className="mt-3" disabled={!notes.trim() || add.isPending} onClick={() => add.mutate()}>Agregar a la historia</Button>
       </Card>
       {data.entries?.length === 0 && <Empty>Sin entradas.</Empty>}
-      <ol className="space-y-4">
+      <ol className="relative space-y-6 border-l border-line pl-6">
         {data.entries?.map((e) => (
-          <li key={e.id} className="border-l-2 border-line pl-4">
-            <p className="text-xs text-muted first-letter:uppercase">{dateTimeLabel(e.createdAt)}</p>
-            <p className="whitespace-pre-line">{e.notes}</p>
+          <li key={e.id} className="relative">
+            <span className="absolute -left-[29px] top-1.5 size-2.5 rounded-full border-2 border-canvas bg-olive" />
+            <p className="font-mono text-[12px] text-muted first-letter:uppercase">{dateTimeLabel(e.createdAt)}</p>
+            <p className="mt-1.5 whitespace-pre-line text-ink-strong">{e.notes}</p>
           </li>
         ))}
       </ol>
@@ -168,11 +178,12 @@ function Recommendations({ data, onSaved }: { data: RecordDetail; onSaved: () =>
         <FormError>{add.isError ? errorMessage(add.error) : undefined}</FormError>
         <Button className="mt-3" disabled={!body.trim() || add.isPending} onClick={() => add.mutate()}>Publicar</Button>
       </Card>
-      <ol className="space-y-4">
-        {data.recommendations?.map((r) => (
-          <li key={r.id} className="border-l-2 border-line pl-4">
-            <p className="text-xs text-muted first-letter:uppercase">{dateTimeLabel(r.createdAt)}</p>
-            <p className="whitespace-pre-line">{r.body}</p>
+      <ol className="relative space-y-6 border-l border-line pl-6">
+        {data.recommendations?.map((e) => (
+          <li key={e.id} className="relative">
+            <span className="absolute -left-[29px] top-1.5 size-2.5 rounded-full border-2 border-canvas bg-rose" />
+            <p className="font-mono text-[12px] text-muted first-letter:uppercase">{dateTimeLabel(e.createdAt)}</p>
+            <p className="mt-1.5 whitespace-pre-line text-ink-strong">{e.body}</p>
           </li>
         ))}
       </ol>
@@ -201,16 +212,19 @@ function Consents({ data, onSaved }: { data: RecordDetail; onSaved: () => void }
           <Button onClick={() => add.mutate()} disabled={add.isPending}>Registrar firmado hoy</Button>
         </div>
       </Card>
-      <ul className="divide-y divide-line">
+      {Boolean(data.consents?.length) && <ul className="divide-y divide-line overflow-hidden rounded-[20px] border border-line/70 bg-surface">
         {data.consents?.map((c) => (
-          <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-            <span>{consentNames[c.type]} · {c.documentVersion} · <span className="inline-block first-letter:uppercase">{dateTimeLabel(c.signedAt)}</span></span>
+          <li key={c.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+            <span>
+              <span className="block text-ink-strong">{consentNames[c.type]}</span>
+              <span className="font-mono text-[12px] text-muted">{c.documentVersion} · <span className="inline-block first-letter:uppercase">{dateTimeLabel(c.signedAt)}</span></span>
+            </span>
             {c.revokedAt ? <Badge tone="red">Revocado</Badge> : (
-              <Button variant="ghost" className="py-1" onClick={() => { if (confirm('¿Revocar este consentimiento?')) revoke.mutate(c.id); }}>Revocar</Button>
+              <Button variant="ghost" onClick={() => { if (confirm('¿Revocar este consentimiento?')) revoke.mutate(c.id); }}>Revocar</Button>
             )}
           </li>
         ))}
-      </ul>
+      </ul>}
     </div>
   );
 }
@@ -233,7 +247,7 @@ function PhotoThumb({ recordId, photoId, alt }: { recordId: string; photoId: str
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [recordId, photoId]);
-  return url ? <img src={url} alt={alt} className="aspect-square w-full rounded-lg border border-line object-cover" /> : <div className="aspect-square rounded-lg bg-sunken" />;
+  return url ? <img src={url} alt={alt} className="aspect-square w-full rounded-[16px] border border-line object-cover" /> : <div className="aspect-square animate-pulse rounded-[16px] bg-sunken" />;
 }
 
 function Photos({ data, onSaved }: { data: RecordDetail; onSaved: () => void }) {
@@ -269,7 +283,7 @@ function Photos({ data, onSaved }: { data: RecordDetail; onSaved: () => void }) 
         {data.photos?.map((p) => (
           <figure key={p.id} className="space-y-1">
             <PhotoThumb recordId={data.record.id} photoId={p.id} alt={`${p.kind === 'ANTES' ? 'Antes' : 'Después'}, ${dateTimeLabel(p.takenAt)}`} />
-            <figcaption className="text-xs text-muted">{p.kind === 'ANTES' ? 'Antes' : 'Después'} · {dateTimeLabel(p.takenAt)}</figcaption>
+            <figcaption className="pt-1"><Datum dot={p.kind === 'ANTES' ? 'bg-golden' : 'bg-olive'} className="text-[12px]">{p.kind === 'ANTES' ? 'Antes' : 'Después'} · {dateTimeLabel(p.takenAt)}</Datum></figcaption>
           </figure>
         ))}
       </div>
@@ -295,9 +309,12 @@ function Access({ data, onSaved }: { data: RecordDetail; onSaved: () => void }) 
       <ul className="divide-y divide-line">
         {data.grants?.length === 0 && <li className="py-2 text-sm text-muted">No está compartida con nadie más.</li>}
         {data.grants?.map((g) => (
-          <li key={g.professionalId} className="flex items-center justify-between py-2 text-sm">
-            {g.displayName}
-            <Button variant="ghost" className="py-1" onClick={() => revoke.mutate(g.professionalId)}>Quitar acceso</Button>
+          <li key={g.professionalId} className="flex items-center justify-between py-2.5">
+            <span className="flex items-center gap-3 text-ink-strong">
+              <span aria-hidden="true" className="grid size-9 place-items-center rounded-full bg-daisy font-mono text-[12px]">{initials(g.displayName)}</span>
+              {g.displayName}
+            </span>
+            <Button variant="ghost" onClick={() => revoke.mutate(g.professionalId)}>Quitar acceso</Button>
           </li>
         ))}
       </ul>

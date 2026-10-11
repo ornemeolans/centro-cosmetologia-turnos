@@ -1,20 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Field, FormError } from '../../components/Field';
-import { Badge, Button, Card, PageHeader, Section } from '../../components/ui';
+import { Badge, Button, Card, Eyebrow, IndexedSections, PageHeader, Section } from '../../components/ui';
 import { api, send } from '../../lib/api';
 import { errorMessage } from '../../lib/auth';
-import { isoDay, weekdays } from '../../lib/format';
+import { initials, isoDay, weekdays } from '../../lib/format';
 
 export function AdminPage() {
   return (
     <div className="space-y-12">
       <PageHeader title="Administración" subtitle="Equipo, accesos y reglas del centro." />
-      <Professionals />
-      <Reception />
-      <CenterHours />
-      <Holidays />
-      <Rules />
+      <IndexedSections sections={[['equipo', 'Profesionales'], ['recepcion', 'Recepción'], ['horario', 'Horario del centro'], ['feriados', 'Feriados'], ['reglas', 'Reglas']]}>
+        <Professionals />
+        <Reception />
+        <CenterHours />
+        <Holidays />
+        <Rules />
+      </IndexedSections>
     </div>
   );
 }
@@ -43,19 +45,24 @@ function Professionals() {
     invite.mutate();
   }
   return (
-    <Section title="Profesionales">
+    <Section id="equipo" title="Profesionales">
       <Card className="space-y-4">
         <ul className="divide-y divide-line">
           {data?.professionals.map((p) => (
-            <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-              <span>
-                <span className="font-medium text-ink-strong">{p.displayName}</span> {p.isOwner && <Badge tone="blue">Dueña</Badge>}
-                <span className="block text-sm text-muted">{p.email}{p.mpConnected ? ' · Mercado Pago conectado' : ''}</span>
+            <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 py-3.5">
+              <span className="flex min-w-0 items-center gap-4">
+                <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-full bg-daisy font-mono text-[13px] text-ink-strong">
+                  {initials(p.displayName)}
+                </span>
+                <span className="min-w-0">
+                  <span className="font-medium text-ink-strong">{p.displayName}</span> {p.isOwner && <Badge tone="blue">Dueña</Badge>}
+                  <span className="block truncate font-mono text-[12px] text-muted">{p.email}{p.mpConnected ? ' · Mercado Pago conectado' : ''}</span>
+                </span>
               </span>
               <span className="flex items-center gap-2">
                 <Badge tone={proStatus[p.status]?.tone}>{proStatus[p.status]?.text}</Badge>
                 {!p.isOwner && p.status !== 'INVITADA' && (
-                  <Button variant="ghost" className="py-1" onClick={() => toggle.mutate({ id: p.id, isActive: p.status === 'INACTIVA' })}>
+                  <Button variant="ghost" className="min-h-9 py-1" onClick={() => toggle.mutate({ id: p.id, isActive: p.status === 'INACTIVA' })}>
                     {p.status === 'INACTIVA' ? 'Reactivar' : 'Desactivar'}
                   </Button>
                 )}
@@ -89,20 +96,20 @@ function Reception() {
   const toggleUser = useMutation({ mutationFn: (u: { id: string; isActive: boolean }) => send(`/admin/reception-access/users/${u.id}`, 'PATCH', { isActive: u.isActive }), onSuccess: refresh });
   const error = addGoogle.error ?? addUser.error;
   return (
-    <Section title="Recepción">
+    <Section id="recepcion" title="Recepción">
       <Card className="space-y-5">
-        <p className="text-sm text-muted">Recepción ve todas las agendas y los datos de contacto, crea perfiles de primera vez y agenda turnos. No ve historia clínica ni fotos.</p>
+        <p className="rounded-xl bg-sunken px-4 py-3 text-sm text-muted">Recepción ve todas las agendas y los datos de contacto, crea perfiles de primera vez y agenda turnos. No ve historia clínica ni fotos.</p>
         <ul className="divide-y divide-line text-sm">
           {data?.google.map((g) => (
             <li key={g.id} className="flex items-center justify-between py-2">
-              <span>{g.email} <Badge>Google</Badge></span>
-              <Button variant="ghost" className="py-1" onClick={() => removeGoogle.mutate(g.id)}>Quitar</Button>
+              <span className="flex flex-wrap items-center gap-2 text-ink-strong">{g.email} <Badge>Google</Badge></span>
+              <Button variant="ghost" className="min-h-9 py-1" onClick={() => removeGoogle.mutate(g.id)}>Quitar</Button>
             </li>
           ))}
           {data?.users.map((u) => (
             <li key={u.id} className="flex items-center justify-between py-2">
-              <span>{u.name} · <span className="font-mono">{u.username}</span> {!u.isActive && <Badge>Inactivo</Badge>}</span>
-              <Button variant="ghost" className="py-1" onClick={() => toggleUser.mutate({ id: u.id, isActive: !u.isActive })}>{u.isActive ? 'Desactivar' : 'Reactivar'}</Button>
+              <span className="flex flex-wrap items-center gap-2 text-ink-strong">{u.name} <span className="font-mono text-[13px] text-muted">{u.username}</span> {!u.isActive && <Badge>Inactivo</Badge>}</span>
+              <Button variant="ghost" className="min-h-9 py-1" onClick={() => toggleUser.mutate({ id: u.id, isActive: !u.isActive })}>{u.isActive ? 'Desactivar' : 'Reactivar'}</Button>
             </li>
           ))}
         </ul>
@@ -144,21 +151,22 @@ function CenterHours() {
     onSuccess: refresh,
   });
   return (
-    <Section title="Horario del centro">
+    <Section id="horario" title="Horario del centro">
       <Card className="space-y-3">
+        <Eyebrow className="mb-2 text-muted">Días hábiles</Eyebrow>
         <p className="text-sm text-muted">Define los días hábiles: el plazo para cambios (2 días hábiles completos) se cuenta sobre los días que el centro abre.</p>
         {[1, 2, 3, 4, 5, 6, 7].map((d) => (
           <div key={d} className="flex flex-wrap items-center gap-3">
-            <label className="flex w-32 items-center gap-2 text-sm">
+            <label className="flex min-h-10 w-36 items-center gap-2.5 text-sm text-ink-strong">
               <input type="checkbox" className="accent-ink-strong" checked={Boolean(days[d])}
                 onChange={(e) => setDays({ ...days, [d]: e.target.checked ? { open: '09:00', close: '18:00' } : null })} />
               {weekdays[d]}
             </label>
             {days[d] && (
               <>
-                <input type="time" aria-label={`Apertura ${weekdays[d]}`} value={days[d]!.open} onChange={(e) => setDays({ ...days, [d]: { ...days[d]!, open: e.target.value } })} className="rounded border border-line px-2 py-1 font-mono text-sm" />
-                <span className="text-muted">a</span>
-                <input type="time" aria-label={`Cierre ${weekdays[d]}`} value={days[d]!.close} onChange={(e) => setDays({ ...days, [d]: { ...days[d]!, close: e.target.value } })} className="rounded border border-line px-2 py-1 font-mono text-sm" />
+                <input type="time" aria-label={`Apertura ${weekdays[d]}`} value={days[d]!.open} onChange={(e) => setDays({ ...days, [d]: { ...days[d]!, open: e.target.value } })} className="min-h-10 rounded-lg border border-line bg-surface px-2.5 font-mono text-[13px] text-ink-strong hover:border-n4" />
+                <span className="font-mono text-[13px] text-muted">a</span>
+                <input type="time" aria-label={`Cierre ${weekdays[d]}`} value={days[d]!.close} onChange={(e) => setDays({ ...days, [d]: { ...days[d]!, close: e.target.value } })} className="min-h-10 rounded-lg border border-line bg-surface px-2.5 font-mono text-[13px] text-ink-strong hover:border-n4" />
               </>
             )}
           </div>
@@ -178,14 +186,14 @@ function Holidays() {
   const add = useMutation({ mutationFn: () => send('/admin/holidays', 'POST', form), onSuccess: () => { setForm({ ...form, name: '' }); refresh(); } });
   const remove = useMutation({ mutationFn: (date: string) => send(`/admin/holidays/${date}`, 'DELETE'), onSuccess: refresh });
   return (
-    <Section title="Feriados">
+    <Section id="feriados" title="Feriados">
       <Card className="space-y-4">
         <p className="text-sm text-muted">No se atiende y no cuentan como días hábiles. Cargá los feriados nacionales del año (y los puentes que tome el centro).</p>
         <ul className="divide-y divide-line text-sm">
           {data?.holidays.map((h) => (
             <li key={h.date} className="flex items-center justify-between py-2">
-              <span><span className="font-mono">{h.date.split('-').reverse().join('/')}</span> · {h.name}</span>
-              <Button variant="ghost" className="py-1" onClick={() => remove.mutate(h.date)}>Quitar</Button>
+              <span className="text-ink-strong"><span className="mr-2 font-mono text-[13px] text-muted">{h.date.split('-').reverse().join('/')}</span>{h.name}</span>
+              <Button variant="ghost" className="min-h-9 py-1" onClick={() => remove.mutate(h.date)}>Quitar</Button>
             </li>
           ))}
         </ul>
@@ -220,7 +228,7 @@ function Rules() {
   }, [data]);
   const save = useMutation({ mutationFn: () => send('/admin/settings', 'PUT', values), onSuccess: refresh });
   return (
-    <Section title="Reglas">
+    <Section id="reglas" title="Reglas">
       <Card className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-3">
           {ruleFields.map((f) => (

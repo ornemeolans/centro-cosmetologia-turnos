@@ -95,15 +95,35 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
   );
 }
 
-export function Section({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
+export function Section({ id, title, children, action }: { id?: string; title: string; children: ReactNode; action?: ReactNode }) {
   return (
-    <section className="space-y-5">
+    <section id={id} className="space-y-5">
       <div className="flex items-end justify-between gap-4">
         <h2 className="text-[1.75rem]">{title}</h2>
         {action}
       </div>
       {children}
     </section>
+  );
+}
+
+/** Página larga con índice numerado fijo a la izquierda (solo en escritorio). */
+export function IndexedSections({ sections, children }: { sections: readonly (readonly [string, string])[]; children: ReactNode }) {
+  return (
+    <div className="grid gap-12 lg:grid-cols-[13rem_1fr]">
+      <nav aria-label="Secciones" className="hidden lg:block">
+        <ol className="sticky top-28 space-y-1 font-mono text-[13px]">
+          {sections.map(([id, label], i) => (
+            <li key={id}>
+              <a href={`#${id}`} className="flex gap-3 rounded-lg px-3 py-2 text-muted no-underline transition-colors hover:bg-sunken hover:text-ink-strong">
+                <span className="text-n4">{String(i + 1).padStart(2, '0')}</span>{label}
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+      <div className="min-w-0 space-y-14 [&>section]:scroll-mt-28">{children}</div>
+    </div>
   );
 }
 

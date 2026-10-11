@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Field } from '../../components/Field';
-import { Badge, Card, Empty, PageHeader, Section } from '../../components/ui';
+import { Badge, Card, Empty, Eyebrow, PageHeader, Panel, Section } from '../../components/ui';
 import { api } from '../../lib/api';
 import { money } from '../../lib/format';
 
@@ -36,7 +36,7 @@ export function ReportsPage() {
   return (
     <div className="space-y-12">
       <PageHeader title="Reportes" subtitle={data?.scope === 'ALL' ? 'Tablero general del centro.' : 'Tus números.'} />
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 [&>label]:w-44">
         <Field label="Desde" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         <Field label="Hasta" type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} />
       </div>
@@ -45,15 +45,15 @@ export function ReportsPage() {
         <Section title="Comparación entre profesionales">
           <Card className="overflow-x-auto p-0 sm:p-0">
             <table className="w-full min-w-[44rem] text-sm">
-              <thead className="text-left text-xs uppercase tracking-wider text-muted">
+              <thead className="text-left font-mono text-[11px] uppercase tracking-wider text-muted">
                 <tr className="border-b border-line">
-                  {['Profesional', 'Ocupación', 'Realizados', 'Ausencias', 'Canc. tardías', 'Forzados', 'Señas cobradas', 'Saldos vigentes'].map((h) => <th key={h} className="px-4 py-2 font-medium">{h}</th>)}
+                  {['Profesional', 'Ocupación', 'Realizados', 'Ausencias', 'Canc. tardías', 'Forzados', 'Señas cobradas', 'Saldos vigentes'].map((h) => <th key={h} className="px-4 py-3 font-normal">{h}</th>)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-line font-mono">
                 {data.professionals.map((p) => (
                   <tr key={p.professional.id}>
-                    <td className="px-4 py-2 font-sans text-ink-strong">{p.professional.displayName}</td>
+                    <td className="px-4 py-3 font-sans text-ink-strong">{p.professional.displayName}</td>
                     <td className="px-4">{pct(p.occupancy.rate)}</td>
                     <td className="px-4">{p.activity.completed}</td>
                     <td className="px-4">{p.activity.noShows}</td>
@@ -72,22 +72,23 @@ export function ReportsPage() {
       {data?.professionals.map((p) => (
         <Section key={p.professional.id} title={p.professional.displayName}>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat label="Ocupación" value={pct(p.occupancy.rate)} note={`${Math.round(p.occupancy.bookedMinutes / 60)} de ${Math.round(p.occupancy.availableMinutes / 60)} h`} />
+            <Stat dark label="Ocupación" value={pct(p.occupancy.rate)} note={`${Math.round(p.occupancy.bookedMinutes / 60)} de ${Math.round(p.occupancy.availableMinutes / 60)} h`} />
             <Stat label="Turnos realizados" value={String(p.activity.completed)} note={`${p.activity.upcoming} por venir · ${p.activity.firstVisits} primera vez`} />
             <Stat label="Ausencias y cancelaciones tardías" value={String(p.activity.noShows + p.activity.canceledLate)} note={`Señas no reintegradas: ${money(p.money.depositsForfeitedCents)}`} />
             <Stat label="Señas cobradas" value={money(p.money.depositsCollectedCents)} note={`Saldos a favor vigentes: ${money(p.money.creditsOutstandingCents)}`} />
           </div>
           {p.treatments.length > 0 && (
             <Card>
-              <h3 className="mb-3 text-lg">Tratamientos</h3>
-              <ul className="space-y-2 text-sm">
-                {p.treatments.map((t) => {
+              <Eyebrow className="mb-5 text-muted">Tratamientos</Eyebrow>
+              <ul className="space-y-3 text-sm">
+                {p.treatments.map((t, i) => {
                   const max = p.treatments[0].count;
+                  const bars = ['bg-olive', 'bg-golden', 'bg-rose', 'bg-peach'];
                   return (
                     <li key={t.name} className="grid grid-cols-[minmax(8rem,14rem)_1fr_auto] items-center gap-3">
                       <span className="truncate">{t.name}</span>
-                      <span className="h-2 rounded-full bg-sunken"><span className="block h-2 rounded-full bg-ink/60" style={{ width: `${(t.count / max) * 100}%` }} /></span>
-                      <span className="font-mono text-xs text-muted">{t.count} · {money(t.revenueCents)}</span>
+                      <span className="h-2 rounded-full bg-sunken"><span className={`block h-2 rounded-full ${bars[i % bars.length]}`} style={{ width: `${(t.count / max) * 100}%` }} /></span>
+                      <span className="font-mono text-[12px] text-muted">{t.count} · {money(t.revenueCents)}</span>
                     </li>
                   );
                 })}
@@ -99,15 +100,15 @@ export function ReportsPage() {
 
       <Section title="Cumplimiento de clientas (últimos 6 meses)">
         {data?.clients.length === 0 && <Empty>Todavía no hay turnos terminados para medir.</Empty>}
-        <Card className="overflow-x-auto p-0 sm:p-0">
+        {Boolean(data?.clients.length) && <Card className="overflow-x-auto p-0 sm:p-0">
           <table className="w-full min-w-[32rem] text-sm">
-            <thead className="text-left text-xs uppercase tracking-wider text-muted">
-              <tr className="border-b border-line">{['Clienta', 'Asistencia', 'Realizados', 'Ausencias', 'Canc. tardías', ''].map((h) => <th key={h} className="px-4 py-2 font-medium">{h}</th>)}</tr>
+            <thead className="text-left font-mono text-[11px] uppercase tracking-wider text-muted">
+              <tr className="border-b border-line">{['Clienta', 'Asistencia', 'Realizados', 'Ausencias', 'Canc. tardías', ''].map((h) => <th key={h} className="px-4 py-3 font-normal">{h}</th>)}</tr>
             </thead>
             <tbody className="divide-y divide-line">
               {data?.clients.map((c) => (
                 <tr key={c.id}>
-                  <td className="px-4 py-2">{c.name}</td>
+                  <td className="px-4 py-3 text-ink-strong">{c.name}</td>
                   <td className="px-4 font-mono">{pct(c.rate)}</td>
                   <td className="px-4 font-mono">{c.completed}</td>
                   <td className="px-4 font-mono">{c.noShows}</td>
@@ -117,18 +118,20 @@ export function ReportsPage() {
               ))}
             </tbody>
           </table>
-        </Card>
+        </Card>}
       </Section>
     </div>
   );
 }
 
-function Stat({ label, value, note }: { label: string; value: string; note: string }) {
+/** Cifra destacada: la primera de cada profesional va en panel oscuro, como en el tablero de referencia. */
+function Stat({ label, value, note, dark = false }: { label: string; value: string; note: string; dark?: boolean }) {
+  const Box = dark ? Panel : Card;
   return (
-    <Card>
-      <p className="text-xs uppercase tracking-wider text-muted">{label}</p>
-      <p className="mt-2 font-mono text-3xl text-ink-strong">{value}</p>
-      <p className="mt-1 text-xs text-muted">{note}</p>
-    </Card>
+    <Box className="flex flex-col p-5 sm:p-6">
+      <Eyebrow dot={dark ? 'bg-golden' : 'bg-rose'} className={dark ? 'text-daisy/70' : 'text-muted'}>{label}</Eyebrow>
+      <p className={`mt-auto pt-6 font-mono text-[2.1rem] leading-none ${dark ? 'text-golden' : 'text-ink-strong'}`}>{value}</p>
+      <p className={`mt-3 text-sm ${dark ? 'text-daisy/65' : 'text-muted'}`}>{note}</p>
+    </Box>
   );
 }
