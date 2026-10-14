@@ -3,7 +3,10 @@ import { env } from '../env';
 
 /** Normalización usada para vincular la ficha: minúsculas, sin espacios; en gmail.com sin puntos ni sufijo +algo. */
 export function normalizeEmail(email: string): string {
-  const [local, domain] = email.trim().toLowerCase().split('@');
+  const parts = email.trim().toLowerCase().split('@');
+  // Algo que no tiene exactamente una @ no es un email: se deja tal cual para que no coincida con ninguna cuenta.
+  if (parts.length !== 2) return parts.join('@');
+  const [local, domain] = parts;
   if (domain === 'gmail.com' || domain === 'googlemail.com') {
     return `${local.split('+')[0].replaceAll('.', '')}@gmail.com`;
   }

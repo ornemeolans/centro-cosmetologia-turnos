@@ -7,7 +7,8 @@ import { getNoticeConfig, getSettings } from './center';
 import { addCredit, availableCredit, consumeCredit } from './credits';
 import { notify } from './notifications';
 import { verifyOffer } from './offers';
-import { audit, recordAccess } from './records';
+import { audit } from './records';
+import { myProfessional } from './staff';
 import { onSlotFreed } from './waitlist';
 
 type Tx = Prisma.TransactionClient;
@@ -79,7 +80,13 @@ export async function createAppointment(input: CreateInput): Promise<Appointment
     if (isClient && depositTotal > 0 && !professional.mpAccessTokenEnc) {
       throw new HttpError(422, 'PROFESSIONAL_MP_NOT_CONNECTED');
     }
-    const credit = isClient ? Math.min(depositTotal, await availableCredit(record.id, professional.id, tx)) : 0;
+    // El saldo ya prometido a otras reservas pendientes no se puede volver a usar.
+    const reserved = isClient ? await tx.appointment.aggregate({
+      where: { clientRecordId: record.id, professionalId: professional.id, status: 'PENDING_PAYMENT', holdExpiresAt: { gt: new Date() } },
+      _sum: { creditAppliedCents: true },
+    }) : null;
+    const usable = isClient ? (await availableCredit(record.id, professional.id, tx)) - (reserved?._sum.creditAppliedCents ?? 0) : 0;
+    const credit = isClient ? Math.max(0, Math.min(depositTotal, usable)) : 0;
     const confirmedNow = !isClient || depositTotal - credit === 0;
 
     const endAt = new Date(input.startAt.getTime() + durationMin * 60_000);
@@ -129,13 +136,16 @@ export async function confirmPaidAppointment(appointmentId: string): Promise<'CO
   try {
     await prisma.$transaction(async (tx) => {
       // Un pago tardío sobre una reserva vencida: se reactiva solo si el horario sigue libre (la restricción EXCLUDE lo garantiza).
+      const paid = appt.depositTotalCents - appt.creditAppliedCents;
       const { count } = await tx.appointment.updateMany({
         where: { id: appt.id, status: { in: ['PENDING_PAYMENT', 'EXPIRED'] } },
-        data: { status: 'CONFIRMED', holdExpiresAt: null, depositPaidCents: appt.depositTotalCents },
+        data: { status: 'CONFIRMED', holdExpiresAt: null, depositPaidCents: paid },
       });
       if (count === 0) return;
       if (appt.creditAppliedCents > 0) {
-        await consumeCredit(tx, { clientRecordId: appt.clientRecordId, professionalId: appt.professionalId, amountCents: appt.creditAppliedCents, appointmentId: appt.id });
+        // Solo cuenta como seña cubierta el saldo que realmente se pudo descontar.
+        const used = await consumeCredit(tx, { clientRecordId: appt.clientRecordId, professionalId: appt.professionalId, amountCents: appt.creditAppliedCents, appointmentId: appt.id });
+        await tx.appointment.update({ where: { id: appt.id }, data: { depositPaidCents: paid + used, creditAppliedCents: used } });
       }
     });
   } catch (err) {
@@ -166,7 +176,8 @@ async function loadForChange(user: User, id: string, forced: boolean): Promise<{
     if (appt.clientRecord.userId !== user.id) throw notFound('APPOINTMENT_NOT_FOUND');
     return { appt, actor: 'CLIENT' };
   }
-  if (user.role === 'PROFESSIONAL') await recordAccess(user, appt.clientRecordId);
+  // Cada profesional cambia solo los turnos de su propia agenda (como al agendar y en /staff/agenda).
+  if (user.role === 'PROFESSIONAL' && appt.professionalId !== (await myProfessional(user)).id) throw notFound('APPOINTMENT_NOT_FOUND');
   return { appt, actor: 'STAFF' };
 }
 
@@ -193,7 +204,9 @@ export async function rescheduleAppointment(user: User, id: string, newStartAt: 
       excludeAppointmentId: appt.id,
       ignoreAdvanceRules: actor !== 'CLIENT',
     }, tx);
-    await tx.appointment.update({ where: { id: appt.id }, data: { status: 'RESCHEDULED' } });
+    // Cambio de estado atómico: si otro pedido ya movió o canceló el turno, este no hace nada.
+    const { count } = await tx.appointment.updateMany({ where: { id: appt.id, status: 'CONFIRMED' }, data: { status: 'RESCHEDULED' } });
+    if (count !== 1) throw new HttpError(409, 'APPOINTMENT_CHANGED');
     return tx.appointment.create({
       data: {
         clientRecordId: appt.clientRecordId,
@@ -242,7 +255,7 @@ export async function cancelAppointment(
 
   // Una reserva sin pagar se puede abandonar sin consecuencias.
   if (appt.status === 'PENDING_PAYMENT' && actor === 'CLIENT') {
-    await prisma.appointment.update({ where: { id: appt.id }, data: { status: 'EXPIRED', holdExpiresAt: null } });
+    await prisma.appointment.updateMany({ where: { id: appt.id, status: 'PENDING_PAYMENT' }, data: { status: 'EXPIRED', holdExpiresAt: null } });
     return { outcome: 'NO_DEPOSIT', creditCents: 0 };
   }
   if (appt.status !== 'CONFIRMED') throw new HttpError(422, 'NOT_CANCELABLE');
@@ -263,7 +276,11 @@ export async function cancelAppointment(
   const settings = await getSettings();
   const creditCents = outcome === 'CREDIT' ? appt.depositPaidCents : 0;
   await prisma.$transaction(async (tx) => {
-    await tx.appointment.update({ where: { id: appt.id }, data: { status: 'CANCELED', canceledAt: new Date(), forcedByOwnerReason: opts.forcedReason } });
+    const { count } = await tx.appointment.updateMany({
+      where: { id: appt.id, status: 'CONFIRMED' },
+      data: { status: 'CANCELED', canceledAt: new Date(), forcedByOwnerReason: opts.forcedReason },
+    });
+    if (count !== 1) throw new HttpError(409, 'APPOINTMENT_CHANGED');
     await addCredit(tx, {
       clientRecordId: appt.clientRecordId, professionalId: appt.professionalId, amountCents: creditCents,
       appointmentId: appt.id, reason: 'CANCEL_ON_TIME', validDays: settings.creditValidDays,
@@ -284,13 +301,18 @@ export async function setAttendance(user: User, id: string, status: 'COMPLETED' 
   if (appt.status !== 'CONFIRMED') throw new HttpError(422, 'NOT_CONFIRMED');
   if (appt.startAt > new Date()) throw new HttpError(422, 'NOT_STARTED');
 
-  await prisma.$transaction([
-    prisma.appointment.update({ where: { id: appt.id }, data: { status } }),
-    // Retención: la historia se guarda 2 años desde el último turno.
-    ...(status === 'COMPLETED'
-      ? [prisma.clientRecord.update({ where: { id: appt.clientRecordId }, data: { retentionUntil: new Date(appt.startAt.getTime() + 2 * 365 * 86_400_000) } })]
-      : []),
-  ]);
+  await prisma.$transaction(async (tx) => {
+    const { count } = await tx.appointment.updateMany({ where: { id: appt.id, status: 'CONFIRMED' }, data: { status } });
+    if (count !== 1) throw new HttpError(409, 'APPOINTMENT_CHANGED');
+    // Retención: la historia se guarda 2 años desde el último turno (nunca se acorta).
+    if (status === 'COMPLETED') {
+      const until = new Date(appt.startAt.getTime() + 2 * 365 * 86_400_000);
+      await tx.clientRecord.updateMany({
+        where: { id: appt.clientRecordId, OR: [{ retentionUntil: null }, { retentionUntil: { lt: until } }] },
+        data: { retentionUntil: until },
+      });
+    }
+  });
   await audit(user.id, 'appointment', appt.id, status);
 }
 

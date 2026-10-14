@@ -29,7 +29,11 @@ export function useLogout() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => api('/auth/logout', { method: 'POST', body: '{}' }),
-    onSuccess: () => qc.setQueryData(['me'], null),
+    // Se descarta todo lo guardado en memoria: la próxima persona en esta pestaña no debe ver datos de la anterior.
+    onSuccess: () => {
+      qc.clear();
+      qc.setQueryData(['me'], null);
+    },
   });
 }
 
@@ -39,6 +43,8 @@ const messages: Record<string, string> = {
   TOO_MANY_ATTEMPTS: 'Demasiados intentos. Esperá 15 minutos y probá de nuevo.',
   TOO_MANY_REQUESTS: 'Hiciste varios pedidos seguidos. Esperá un rato y probá de nuevo.',
   INVALID_OR_EXPIRED_TOKEN: 'El enlace ya se usó o venció. Pedí uno nuevo.',
+  WRONG_PASSWORD: 'La contraseña no coincide con la que elegiste al registrarte. Si no la recordás, registrate de nuevo.',
+  APPOINTMENT_CHANGED: 'El turno cambió mientras tanto. Actualizá la página y revisalo.',
   ACCOUNT_DISABLED: 'Esta cuenta está desactivada. Consultá con el centro.',
   GOOGLE_NOT_CONFIGURED: 'El ingreso con Google todavía no está configurado.',
   GOOGLE_CANCELLED: 'Cancelaste el ingreso con Google.',

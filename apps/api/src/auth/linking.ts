@@ -16,7 +16,8 @@ export async function applyLoginEffects(userId: string, verifiedEmail: string): 
     const user = await tx.user.findUniqueOrThrow({ where: { id: userId } });
     const role = await resolveRole(tx, user, email);
 
-    await tx.clientRecord.updateMany({ where: { email, userId: null }, data: { userId } });
+    // Solo las cuentas de clienta se vinculan con fichas: una cuenta del equipo no debe ver datos de una clienta por /me.
+    if (role === 'CLIENT') await tx.clientRecord.updateMany({ where: { email, userId: null }, data: { userId } });
 
     if (role !== user.role) {
       await tx.auditLog.create({

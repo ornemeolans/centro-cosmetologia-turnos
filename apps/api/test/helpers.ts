@@ -1,4 +1,4 @@
-import { emailLimiter, loginIpLimiter, loginLimiter } from '../src/auth/rateLimit';
+import { emailLimiter, signupIpLimiter, accountEmailLimiter, loginIpLimiter, loginLimiter } from '../src/auth/rateLimit';
 import { prisma } from '../src/db';
 import { devOutbox, normalizeEmail } from '../src/lib/email';
 
@@ -11,6 +11,8 @@ export async function resetDb() {
   loginLimiter.clear();
   loginIpLimiter.clear();
   emailLimiter.clear();
+  signupIpLimiter.clear();
+  accountEmailLimiter.clear();
 }
 
 /** Token del último email enviado a esa dirección (enlaces ...?token=...). */

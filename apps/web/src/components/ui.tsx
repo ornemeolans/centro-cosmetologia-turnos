@@ -178,7 +178,7 @@ export function Tabs<T extends string>({ value, onChange, options }: { value: T;
   );
 }
 
-const fieldClass = 'mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink-strong transition-colors hover:border-n4 focus:border-n6 focus:outline-none';
+const fieldClass = 'mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink-strong transition-colors hover:border-n4 focus:border-n6 focus:outline-none read-only:bg-sunken read-only:text-muted';
 
 export function Select({ label, children, ...props }: { label: string } & React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (

@@ -136,14 +136,16 @@ enum TokenPurpose {
 }
 
 model EmailToken {
-  id        String       @id @default(uuid()) @db.Uuid
-  tokenHash String       @unique
-  userId    String       @db.Uuid
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  purpose   TokenPurpose
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime     @default(now())
+  id                  String       @id @default(uuid()) @db.Uuid
+  tokenHash           String       @unique
+  userId              String       @db.Uuid
+  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose             TokenPurpose
+  expiresAt           DateTime
+  usedAt              DateTime?
+  /// Registro: contraseña elegida en ESE pedido (scrypt). Se activa solo si quien verifica la conoce.
+  pendingPasswordHash String?
+  createdAt           DateTime     @default(now())
 
   @@map("email_tokens")
 }
@@ -159,27 +161,27 @@ model StaffAllowlist {
 }
 
 model Professional {
-  id                 String                  @id @default(uuid()) @db.Uuid
-  userId             String?                 @unique @db.Uuid
-  user               User?                   @relation(fields: [userId], references: [id])
-  displayName        String
-  inviteEmail        String
-  inviteTokenHash    String?
-  inviteExpiresAt    DateTime?
-  minAdvanceHours    Int                     @default(24)
-  maxAdvanceDays     Int                     @default(30)
-  mpUserId           String?
-  mpAccessTokenEnc   String?
-  mpRefreshTokenEnc  String?
-  mpTokenExpiresAt   DateTime?
-  isActive           Boolean                 @default(true)
-  treatments         ProfessionalTreatment[]
-  combos             TreatmentCombo[]
-  schedules          Schedule[]
-  exceptions         ScheduleException[]
-  appointments       Appointment[]
-  ownedRecords       ClientRecord[]          @relation("RecordOwner")
-  accessGrants       RecordAccessGrant[]
+  id                String                  @id @default(uuid()) @db.Uuid
+  userId            String?                 @unique @db.Uuid
+  user              User?                   @relation(fields: [userId], references: [id])
+  displayName       String
+  inviteEmail       String
+  inviteTokenHash   String?
+  inviteExpiresAt   DateTime?
+  minAdvanceHours   Int                     @default(24)
+  maxAdvanceDays    Int                     @default(30)
+  mpUserId          String?
+  mpAccessTokenEnc  String?
+  mpRefreshTokenEnc String?
+  mpTokenExpiresAt  DateTime?
+  isActive          Boolean                 @default(true)
+  treatments        ProfessionalTreatment[]
+  combos            TreatmentCombo[]
+  schedules         Schedule[]
+  exceptions        ScheduleException[]
+  appointments      Appointment[]
+  ownedRecords      ClientRecord[]          @relation("RecordOwner")
+  accessGrants      RecordAccessGrant[]
 
   @@map("professionals")
 }
@@ -220,17 +222,17 @@ model TreatmentCombo {
 }
 
 model CenterSettings {
-  id                   Int   @id @default(1)
-  bufferMin            Int   @default(15)
-  holdMin              Int   @default(20)
-  maxReschedules       Int   @default(2)
-  noticeBusinessDays   Int   @default(2)
-  creditValidDays      Int   @default(30)
-  waitlistPriorityMin  Int   @default(30)
-  maxAlertsPerWeek     Int   @default(3)
-  reliableMinVisits    Int   @default(3)
-  reliableMinRate      Float @default(0.9)
-  lastDailyJobAt       DateTime?
+  id                  Int       @id @default(1)
+  bufferMin           Int       @default(15)
+  holdMin             Int       @default(20)
+  maxReschedules      Int       @default(2)
+  noticeBusinessDays  Int       @default(2)
+  creditValidDays     Int       @default(30)
+  waitlistPriorityMin Int       @default(30)
+  maxAlertsPerWeek    Int       @default(3)
+  reliableMinVisits   Int       @default(3)
+  reliableMinRate     Float     @default(0.9)
+  lastDailyJobAt      DateTime?
 
   @@map("center_settings")
 }
@@ -421,17 +423,17 @@ model AppointmentItem {
 }
 
 model Payment {
-  id              String      @id @default(uuid()) @db.Uuid
-  appointmentId   String      @db.Uuid
-  appointment     Appointment @relation(fields: [appointmentId], references: [id])
-  professionalId  String      @db.Uuid // cobradora
-  mpPreferenceId  String?
-  mpPaymentId     String?     @unique
-  status          String
-  amountCents     Int
-  rawPayload      Json?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id             String      @id @default(uuid()) @db.Uuid
+  appointmentId  String      @db.Uuid
+  appointment    Appointment @relation(fields: [appointmentId], references: [id])
+  professionalId String      @db.Uuid // cobradora
+  mpPreferenceId String?
+  mpPaymentId    String?     @unique
+  status         String
+  amountCents    Int
+  rawPayload     Json?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   @@map("payments")
 }
@@ -449,20 +451,19 @@ model CreditLedger {
   createdAt      DateTime     @default(now())
 
   @@index([clientRecordId, professionalId])
-
   @@map("credit_ledger")
 }
 
 model ClientInquiry {
-  id             String       @id @default(uuid()) @db.Uuid
-  clientRecordId String?      @db.Uuid // null si la clienta todavía no está vinculada (pedido de cambio de email)
+  id             String        @id @default(uuid()) @db.Uuid
+  clientRecordId String?       @db.Uuid // null si la clienta todavía no está vinculada (pedido de cambio de email)
   clientRecord   ClientRecord? @relation(fields: [clientRecordId], references: [id])
-  professionalId String       @db.Uuid
+  professionalId String        @db.Uuid
   type           InquiryType
   body           String
   requestedEmail String?
-  status         String       @default("OPEN")
-  createdAt      DateTime     @default(now())
+  status         String        @default("OPEN")
+  createdAt      DateTime      @default(now())
 
   @@map("client_inquiries")
 }

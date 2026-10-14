@@ -43,5 +43,22 @@ const schema = z.object({
   ENABLE_DEV_OUTBOX: optional,
 });
 
+const KNOWN_PLACEHOLDERS = ['dev-only-secret', 'dev-cron-secret', 'cambiar-por-un-valor-largo-y-aleatorio'];
+
+/**
+ * En producción los secretos que firman cookies y enlaces y que protegen el cron tienen que ser propios:
+ * con un valor por defecto o el del ejemplo, cualquiera podría falsificar enlaces o disparar tareas.
+ */
+export function assertProductionSecrets(e: { NODE_ENV: string; SESSION_SECRET: string; CRON_SECRET: string }) {
+  if (e.NODE_ENV !== 'production') return;
+  for (const key of ['SESSION_SECRET', 'CRON_SECRET'] as const) {
+    const value = e[key];
+    if (value.length < 32 || KNOWN_PLACEHOLDERS.includes(value)) {
+      throw new Error(`${key} tiene que ser un valor propio de al menos 32 caracteres en producción.`);
+    }
+  }
+}
+
 export const env = schema.parse(process.env);
+assertProductionSecrets(env);
 export type Env = typeof env;

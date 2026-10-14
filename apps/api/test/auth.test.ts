@@ -14,7 +14,7 @@ const post = (agent: request.Agent | ReturnType<typeof request>, path: string, b
 async function registerAndVerify(email: string, password = 'una-clave-segura') {
   const agent = request.agent(app);
   expect((await post(agent, '/auth/register', { email, password, name: 'Lucía Gómez' })).status).toBe(202);
-  const res = await post(agent, '/auth/verify-email', { token: lastTokenFor(email) });
+  const res = await post(agent, '/auth/verify-email', { token: lastTokenFor(email), password });
   expect(res.status).toBe(200);
   return agent;
 }
@@ -30,7 +30,7 @@ describe('registro con email y contraseña', () => {
     expect(login.status).toBe(403);
     expect(login.body.error).toBe('EMAIL_NOT_VERIFIED');
 
-    await post(agent, '/auth/verify-email', { token: lastTokenFor('lucia@empresa.com') });
+    await post(agent, '/auth/verify-email', { token: lastTokenFor('lucia@empresa.com'), password: 'una-clave-segura' });
     const me = await agent.get('/api/v1/me');
     expect(me.status).toBe(200);
     expect(me.body.user).toMatchObject({ email: 'lucia@empresa.com', role: 'CLIENT' });
@@ -40,8 +40,8 @@ describe('registro con email y contraseña', () => {
     const agent = request.agent(app);
     await post(agent, '/auth/register', { email: 'lucia@empresa.com', password: 'una-clave-segura', name: 'Lucía' });
     const token = lastTokenFor('lucia@empresa.com');
-    expect((await post(agent, '/auth/verify-email', { token })).status).toBe(200);
-    expect((await post(agent, '/auth/verify-email', { token })).status).toBe(400);
+    expect((await post(agent, '/auth/verify-email', { token, password: 'una-clave-segura' })).status).toBe(200);
+    expect((await post(agent, '/auth/verify-email', { token, password: 'una-clave-segura' })).status).toBe(400);
   });
 
   it('rechaza contraseñas cortas', async () => {
@@ -160,7 +160,7 @@ describe('sesiones y seguridad', () => {
   it('la sesión se guarda hasheada: el token de la cookie no está en la base', async () => {
     const agent = request.agent(app);
     await post(agent, '/auth/register', { email: 'lucia@empresa.com', password: 'una-clave-segura', name: 'Lucía' });
-    const res = await post(agent, '/auth/verify-email', { token: lastTokenFor('lucia@empresa.com') });
+    const res = await post(agent, '/auth/verify-email', { token: lastTokenFor('lucia@empresa.com'), password: 'una-clave-segura' });
     const token = /sid=([^;]+)/.exec(res.headers['set-cookie'][0])![1];
     expect(await prisma.session.count({ where: { id: token } })).toBe(0);
     expect(await prisma.session.count()).toBe(1);

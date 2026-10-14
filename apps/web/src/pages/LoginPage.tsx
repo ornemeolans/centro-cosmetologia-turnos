@@ -17,7 +17,7 @@ export function LoginPage() {
   const login = useMutation({
     mutationFn: () => api<{ redirectTo: string }>('/auth/login', { method: 'POST', body: JSON.stringify({ identifier, password }) }),
     onSuccess: async ({ redirectTo }) => {
-      await qc.invalidateQueries({ queryKey: ['me'] });
+      qc.clear();
       navigate(redirectTo);
     },
   });

@@ -2,7 +2,7 @@ import type { Role } from '@prisma/client';
 import { Router, type NextFunction, type Request, type Response } from 'express';
 import { CodeChallengeMethod, OAuth2Client } from 'google-auth-library';
 import { z } from 'zod';
-import { emailLimiter, loginIpLimiter, loginLimiter } from '../auth/rateLimit';
+import { accountEmailLimiter, emailLimiter, loginIpLimiter, loginLimiter, signupIpLimiter } from '../auth/rateLimit';
 import {
   AuthError,
   completeGoogleLogin,
@@ -84,21 +84,25 @@ const password = z.string().min(MIN_PASSWORD_LENGTH).max(200);
 
 authRouter.post('/register', wrap(async (req, res) => {
   const body = z.object({ email: z.string().email(), password, name: z.string().min(1).max(100) }).parse(req.body);
-  if (!emailLimiter.attempt(normalizeEmail(body.email))) return res.status(429).json({ error: 'TOO_MANY_REQUESTS' });
+  const allowed = signupIpLimiter.attempt(`ip:${req.ip}`) && emailLimiter.attempt(normalizeEmail(body.email))
+    && accountEmailLimiter.attempt('global');
+  if (!allowed) return res.status(429).json({ error: 'TOO_MANY_REQUESTS' });
   await register(body);
   return res.status(202).json({ ok: true });
 }));
 
 authRouter.post('/verify-email', wrap(async (req, res) => {
-  const { token } = z.object({ token: z.string().min(10) }).parse(req.body);
-  const user = await verifyEmail(token);
+  const body = z.object({ token: z.string().min(10).max(200), password: z.string().min(1).max(200) }).parse(req.body);
+  const user = await verifyEmail(body.token, body.password);
   await startSession(req, res, user.id);
   return res.json({ redirectTo: homeFor(user.role) });
 }));
 
 authRouter.post('/login', wrap(async (req, res) => {
   const body = z.object({ identifier: z.string().min(3).max(200), password: z.string().min(1).max(200) }).parse(req.body);
-  const accountKey = `acct:${body.identifier.trim().toLowerCase()}`;
+  // Misma forma canónica que usa el login para buscar la cuenta: cada variante del email cuenta como la misma cuenta.
+  const id = body.identifier.trim().toLowerCase();
+  const accountKey = `acct:${id.includes('@') ? normalizeEmail(id) : id}`;
   const ipKey = `ip:${req.ip}`;
   const allowed = loginIpLimiter.attempt(ipKey) && loginLimiter.attempt(accountKey);
   if (!allowed) return res.status(429).json({ error: 'TOO_MANY_ATTEMPTS' });
@@ -116,7 +120,9 @@ authRouter.post('/logout', wrap(async (req, res) => {
 
 authRouter.post('/password/forgot', wrap(async (req, res) => {
   const { email } = z.object({ email: z.string().email() }).parse(req.body);
-  if (emailLimiter.attempt(normalizeEmail(email))) await requestPasswordReset(email);
+  const allowed = signupIpLimiter.attempt(`ip:${req.ip}`) && emailLimiter.attempt(normalizeEmail(email))
+    && accountEmailLimiter.attempt('global');
+  if (allowed) await requestPasswordReset(email);
   return res.status(202).json({ ok: true });
 }));
 

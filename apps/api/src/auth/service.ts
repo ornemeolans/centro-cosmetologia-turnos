@@ -24,19 +24,29 @@ function assertPassword(password: string) {
   if (password.length < MIN_PASSWORD_LENGTH) throw new AuthError('PASSWORD_TOO_SHORT', 422);
 }
 
-async function issueEmailToken(userId: string, purpose: TokenPurpose, hours: number): Promise<string> {
+async function issueEmailToken(userId: string, purpose: TokenPurpose, hours: number, pendingPasswordHash?: string): Promise<string> {
   const token = randomToken();
   await prisma.emailToken.create({
-    data: { userId, purpose, tokenHash: sha256(token), expiresAt: new Date(Date.now() + hours * 3_600_000) },
+    data: { userId, purpose, tokenHash: sha256(token), expiresAt: new Date(Date.now() + hours * 3_600_000), pendingPasswordHash },
   });
   return token;
 }
 
-async function consumeEmailToken(token: string, purpose: TokenPurpose) {
+async function findValidToken(token: string, purpose: TokenPurpose) {
   const record = await prisma.emailToken.findUnique({ where: { tokenHash: sha256(token) }, include: { user: true } });
   if (!record || record.purpose !== purpose || record.usedAt || record.expiresAt < new Date()) {
     throw new AuthError('INVALID_OR_EXPIRED_TOKEN', 400);
   }
+  return record;
+}
+
+/** Invalida los enlaces pendientes del usuario (por ejemplo, después de verificar o restablecer). */
+async function revokeEmailTokens(userId: string, purposes: TokenPurpose[]) {
+  await prisma.emailToken.updateMany({ where: { userId, purpose: { in: purposes }, usedAt: null }, data: { usedAt: new Date() } });
+}
+
+async function consumeEmailToken(token: string, purpose: TokenPurpose) {
+  const record = await findValidToken(token, purpose);
   // updateMany con usedAt: null evita que dos pedidos simultáneos usen el mismo token.
   const { count } = await prisma.emailToken.updateMany({ where: { id: record.id, usedAt: null }, data: { usedAt: new Date() } });
   if (count === 0) throw new AuthError('INVALID_OR_EXPIRED_TOKEN', 400);
@@ -101,14 +111,13 @@ export async function register(input: { email: string; password: string; name: s
 
   const passwordHash = await hashPassword(input.password);
   if (!user) user = await prisma.user.create({ data: { email, name: input.name.trim() || email } });
-  if (identity) {
-    // Registro pendiente: se reemplaza la contraseña; solo quien controla el email puede activarla.
-    await prisma.authIdentity.update({ where: { id: identity.id }, data: { passwordHash } });
-  } else {
-    await prisma.authIdentity.create({ data: { userId: user.id, provider: 'PASSWORD', providerSubject: email, passwordHash } });
+  // La contraseña viaja en el enlace de ESTE registro, no en la identidad: otro registro con el mismo
+  // email no puede reemplazar la contraseña que la dueña del email eligió.
+  if (!identity) {
+    await prisma.authIdentity.create({ data: { userId: user.id, provider: 'PASSWORD', providerSubject: email } });
   }
 
-  const token = await issueEmailToken(user.id, 'VERIFY_EMAIL', VERIFY_HOURS);
+  const token = await issueEmailToken(user.id, 'VERIFY_EMAIL', VERIFY_HOURS, passwordHash);
   await sendEmail({
     to: email,
     subject: 'Confirmá tu email',
@@ -116,12 +125,20 @@ export async function register(input: { email: string; password: string; name: s
   });
 }
 
-export async function verifyEmail(token: string): Promise<User> {
+/**
+ * Para activar la cuenta hay que escribir la contraseña elegida al registrarse: así nadie puede
+ * hacer que la dueña del email active, con un clic, una contraseña que eligió otra persona.
+ */
+export async function verifyEmail(token: string, password: string): Promise<User> {
+  const record = await findValidToken(token, 'VERIFY_EMAIL');
+  const ok = record.pendingPasswordHash ? await verifyPassword(password, record.pendingPasswordHash) : false;
+  if (!ok) throw new AuthError('WRONG_PASSWORD', 401);
   const user = await consumeEmailToken(token, 'VERIFY_EMAIL');
   await prisma.authIdentity.updateMany({
     where: { userId: user.id, provider: 'PASSWORD', verifiedAt: null },
-    data: { verifiedAt: new Date() },
+    data: { passwordHash: record.pendingPasswordHash, verifiedAt: new Date() },
   });
+  await revokeEmailTokens(user.id, ['VERIFY_EMAIL']);
   return applyLoginEffects(user.id, user.email!);
 }
 
@@ -133,9 +150,18 @@ export async function loginWithPassword(identifier: string, password: string): P
     include: { user: true },
   });
 
+  if (identity && !identity.verifiedAt) {
+    // Registro sin confirmar: la contraseña vive en el enlace pendiente. Si coincide, se avisa que falta confirmar.
+    const pending = await prisma.emailToken.findMany({
+      where: { userId: identity.userId, purpose: 'VERIFY_EMAIL', usedAt: null, expiresAt: { gt: new Date() }, pendingPasswordHash: { not: null } },
+      orderBy: { createdAt: 'desc' }, take: 3,
+    });
+    for (const t of pending) if (await verifyPassword(password, t.pendingPasswordHash!)) throw new AuthError('EMAIL_NOT_VERIFIED', 403);
+    await DUMMY_HASH;
+    throw new AuthError('INVALID_CREDENTIALS', 401);
+  }
   const ok = await verifyPassword(password, identity?.passwordHash ?? (await DUMMY_HASH));
   if (!identity || !ok) throw new AuthError('INVALID_CREDENTIALS', 401);
-  if (!identity.verifiedAt) throw new AuthError('EMAIL_NOT_VERIFIED', 403);
   if (!identity.user.isActive) throw new AuthError('ACCOUNT_DISABLED', 403);
 
   return identity.user.email ? applyLoginEffects(identity.userId, identity.user.email) : identity.user;
@@ -163,6 +189,7 @@ export async function resetPassword(token: string, password: string): Promise<Us
     where: { userId: user.id, provider: 'PASSWORD' },
     data: { passwordHash: await hashPassword(password), verifiedAt: new Date() },
   });
+  await revokeEmailTokens(user.id, ['VERIFY_EMAIL', 'RESET_PASSWORD']);
   await endAllSessions(user.id);
   return applyLoginEffects(user.id, user.email!);
 }

@@ -1,38 +1,57 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthShell } from '../components/AuthShell';
-import { FormError } from '../components/Field';
+import { Field, FormError, SubmitButton } from '../components/Field';
 import { api } from '../lib/api';
 import { errorMessage } from '../lib/auth';
 
+const linkClass = 'text-ink-strong underline decoration-peach decoration-2 underline-offset-4 hover:decoration-accent-ink';
+
+/**
+ * Para activar la cuenta se pide la contraseña elegida al registrarse: así nadie puede crear
+ * una cuenta con el email de otra persona y hacer que ella la active con un clic.
+ */
 export function VerifyEmailPage() {
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
+  const [password, setPassword] = useState('');
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const sent = useRef(false);
 
   const verify = useMutation({
-    mutationFn: () => api<{ redirectTo: string }>('/auth/verify-email', { method: 'POST', body: JSON.stringify({ token }) }),
+    mutationFn: () => api<{ redirectTo: string }>('/auth/verify-email', { method: 'POST', body: JSON.stringify({ token, password }) }),
     onSuccess: async ({ redirectTo }) => {
-      await qc.invalidateQueries({ queryKey: ['me'] });
+      qc.clear();
       navigate(redirectTo, { replace: true });
     },
   });
 
-  // El token es de un solo uso: evitamos el doble envío de StrictMode en desarrollo.
-  useEffect(() => {
-    if (token && !sent.current) {
-      sent.current = true;
-      verify.mutate();
-    }
-  }, [token, verify]);
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    verify.mutate();
+  }
+
+  if (!token) {
+    return (
+      <AuthShell eyebrow="Cuenta nueva" title="El enlace no es válido">
+        <FormError>{errorMessage('INVALID_OR_EXPIRED_TOKEN')}</FormError>
+        <Link to="/registro" className={linkClass}>Volver a registrarme</Link>
+      </AuthShell>
+    );
+  }
 
   return (
-    <AuthShell eyebrow="Cuenta nueva" title="Confirmando tu email…">
-      <FormError>{!token ? errorMessage('INVALID_OR_EXPIRED_TOKEN') : verify.isError ? errorMessage(verify.error) : undefined}</FormError>
-      {(verify.isError || !token) && <Link to="/registro" className="text-ink-strong underline decoration-peach decoration-2 underline-offset-4 hover:decoration-accent-ink">Volver a registrarme</Link>}
+    <AuthShell eyebrow="Cuenta nueva" title="Confirmá tu email"
+      intro="Para activar tu cuenta, escribí la contraseña que elegiste al registrarte."
+      footer={<p>¿No te registraste vos? Ignorá este enlace: la cuenta no se activa sin la contraseña.</p>}>
+      <form onSubmit={onSubmit} className="space-y-3">
+        <Field label="Contraseña" type="password" autoComplete="current-password" required value={password}
+          onChange={(e) => setPassword(e.target.value)} />
+        <FormError>{verify.isError ? errorMessage(verify.error) : undefined}</FormError>
+        <SubmitButton pending={verify.isPending}>Activar mi cuenta</SubmitButton>
+      </form>
+      {verify.isError && <Link to="/registro" className={linkClass}>Volver a registrarme</Link>}
     </AuthShell>
   );
 }

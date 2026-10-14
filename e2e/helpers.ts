@@ -26,6 +26,9 @@ export async function registerAndVerify(page: Page, request: APIRequestContext, 
   await expect(page.getByRole('heading', { name: 'Revisá tu email' })).toBeVisible();
 
   await page.goto(await lastEmailLink(request, email));
+  // Para activar la cuenta se vuelve a escribir la contraseña elegida.
+  await page.getByLabel('Contraseña').fill(password);
+  await page.getByRole('button', { name: 'Activar mi cuenta' }).click();
 }
 
 export async function login(page: Page, identifier: string, password = PASSWORD) {

@@ -88,8 +88,9 @@ function DataForm({ data, onSaved }: { data: RecordDetail; onSaved: () => void }
   });
   const save = useMutation({
     mutationFn: () => {
-      const body: Record<string, string | undefined> = { firstName: form.firstName, lastName: form.lastName, email: form.email, phoneE164: form.phoneE164 || undefined };
-      if (full) Object.assign(body, { birthDate: form.birthDate || undefined, skinType: form.skinType, antecedentes: form.antecedentes, alergias: form.alergias, medicacion: form.medicacion });
+      const body: Record<string, string | undefined> = { firstName: form.firstName, lastName: form.lastName, phoneE164: form.phoneE164 || undefined };
+      // El email define qué cuenta ve la ficha: solo lo cambia quien tiene acceso completo.
+      if (full) Object.assign(body, { email: form.email, birthDate: form.birthDate || undefined, skinType: form.skinType, antecedentes: form.antecedentes, alergias: form.alergias, medicacion: form.medicacion });
       return send(`/staff/client-records/${r.id}`, 'PATCH', body);
     },
     onSuccess: onSaved,
@@ -104,7 +105,8 @@ function DataForm({ data, onSaved }: { data: RecordDetail; onSaved: () => void }
       <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
         <Field label="Nombre" required value={form.firstName} onChange={set('firstName')} />
         <Field label="Apellido" required value={form.lastName} onChange={set('lastName')} />
-        <Field label="Email" type="email" required value={form.email} onChange={set('email')} hint="Si lo cambiás, la ficha se vincula con la cuenta de ese email." />
+        <Field label="Email" type="email" required value={form.email} onChange={set('email')} readOnly={!full}
+          hint={full ? 'Si lo cambiás, la ficha se vincula con la cuenta de ese email.' : 'Para cambiarlo, pedíselo a la profesional titular.'} />
         <Field label="Celular" type="tel" value={form.phoneE164} onChange={set('phoneE164')} />
         {full && (
           <>

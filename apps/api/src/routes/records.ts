@@ -129,10 +129,11 @@ recordsRouter.get('/:id', wrap(async (req, res) => {
 
 recordsRouter.patch('/:id', wrap(async (req, res) => {
   const { record, access } = await recordAccess(req.user!, req.params.id);
-  // Recepción solo corrige datos de contacto.
+  // Recepción solo corrige nombre y celular. El email decide qué cuenta ve la ficha (turnos, saldo,
+  // recomendaciones), así que solo lo cambia quien tiene acceso completo.
   const schema = access === 'FULL'
     ? z.object(baseRecordFields).partial()
-    : z.object({ firstName: baseRecordFields.firstName, lastName: baseRecordFields.lastName, email: baseRecordFields.email, phoneE164: baseRecordFields.phoneE164 }).partial();
+    : z.object({ firstName: baseRecordFields.firstName, lastName: baseRecordFields.lastName, phoneE164: baseRecordFields.phoneE164 }).partial().strict();
   const body = schema.parse(req.body) as z.infer<z.ZodObject<typeof baseRecordFields>>;
 
   const data: Record<string, unknown> = { ...body };
@@ -153,7 +154,10 @@ recordsRouter.patch('/:id', wrap(async (req, res) => {
     await linkUserByEmail(record.id, data.email as string);
     await prisma.clientInquiry.updateMany({ where: { type: 'CAMBIO_EMAIL', requestedEmail: data.email as string, status: 'OPEN' }, data: { status: 'RESOLVED' } });
   }
-  await audit(req.user!.id, 'client_record', record.id, 'UPDATE', { fields: Object.keys(data) });
+  // Para los datos de contacto queda el valor anterior y el nuevo: así un cambio indebido se puede revertir.
+  const contact = Object.fromEntries((['email', 'phoneE164'] as const).filter((k) => k in data)
+    .map((k) => [k, { from: record[k], to: (data[k] as string | null | undefined) ?? null }]));
+  await audit(req.user!.id, 'client_record', record.id, 'UPDATE', { fields: Object.keys(data), contact });
   res.json({ ok: true });
 }));
 

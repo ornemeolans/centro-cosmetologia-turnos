@@ -42,8 +42,9 @@ webhooksRouter.post('/mercadopago', wrap(async (req, res) => {
 
 // Verificación del webhook al configurarlo en Meta.
 webhooksRouter.get('/whatsapp', (req, res) => {
-  if (req.query['hub.mode'] === 'subscribe' && req.query['hub.verify_token'] === env.WHATSAPP_VERIFY_TOKEN) {
-    return res.status(200).send(String(req.query['hub.challenge']));
+  // Sin token configurado no se verifica nada; la respuesta va como texto plano (nunca como HTML).
+  if (env.WHATSAPP_VERIFY_TOKEN && req.query['hub.mode'] === 'subscribe' && req.query['hub.verify_token'] === env.WHATSAPP_VERIFY_TOKEN) {
+    return res.status(200).type('text/plain').send(String(req.query['hub.challenge']));
   }
   return res.sendStatus(403);
 });

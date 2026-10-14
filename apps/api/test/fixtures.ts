@@ -33,7 +33,7 @@ export async function staffAgent(email: string, role: 'PROFESSIONAL' | 'RECEPTIO
 export async function clientAgent(email: string) {
   const agent = request.agent(app);
   await post(agent, '/auth/register', { email, password: PASSWORD, name: 'Clienta' });
-  await post(agent, '/auth/verify-email', { token: lastTokenFor(email) });
+  await post(agent, '/auth/verify-email', { token: lastTokenFor(email), password: PASSWORD });
   return agent;
 }
 

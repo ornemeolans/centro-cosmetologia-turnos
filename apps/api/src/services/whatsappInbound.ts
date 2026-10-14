@@ -39,6 +39,16 @@ export async function handleWhatsAppWebhook(body: WebhookBody) {
   }
 }
 
+const LATE_CANCEL_CONTACT = 'Ya pasó el plazo para cancelar sin perder la seña. Para cancelar este turno, comunicate con el centro.';
+
+/**
+ * El celular de la ficha lo puede editar el equipo; el de la cuenta (User.phoneE164) solo la clienta, desde "Mis turnos".
+ * Las acciones con consecuencia económica exigen este último.
+ */
+function phoneVerifiedByClient(appt: { clientRecord: { user: { phoneE164: string | null } | null } }, fromE164: string) {
+  return appt.clientRecord.user?.phoneE164 === fromE164;
+}
+
 async function handleButton(fromE164: string, payload: string) {
   const [action, appointmentId] = payload.split(':');
   const appt = await prisma.appointment.findUnique({ where: { id: appointmentId }, include: { clientRecord: { include: { user: true } } } });
@@ -53,6 +63,7 @@ async function handleButton(fromE164: string, payload: string) {
   if (action === 'CANCELO') {
     if (appt.status !== 'CONFIRMED') return sendText(fromE164, 'Ese turno ya no está activo.');
     const rules = await rulesFor(appt);
+    if (!rules.onTime && !phoneVerifiedByClient(appt, fromE164)) return sendText(fromE164, LATE_CANCEL_CONTACT);
     const warning = rules.onTime
       ? 'Tu seña queda como saldo a favor para tu próxima reserva.'
       : 'Como ya pasó el plazo para cambios, la seña no se reintegra.';
@@ -64,8 +75,10 @@ async function handleButton(fromE164: string, payload: string) {
   }
   if (action === 'CANCELAR_SI') {
     if (appt.status !== 'CONFIRMED' || !appt.clientRecord.user) return sendText(fromE164, 'Ese turno ya no está activo.');
-    // La clienta aceptó explícitamente perder la seña si está fuera del plazo.
-    await cancelAppointment(appt.clientRecord.user, appt.id, { acceptForfeit: true });
+    const rules = await rulesFor(appt);
+    // Perder la seña es una decisión de la clienta: solo se acepta desde el celular que ella misma cargó en su cuenta.
+    if (!rules.onTime && !phoneVerifiedByClient(appt, fromE164)) return sendText(fromE164, LATE_CANCEL_CONTACT);
+    await cancelAppointment(appt.clientRecord.user, appt.id, { acceptForfeit: !rules.onTime });
     return;
   }
   if (action === 'CANCELAR_NO') await sendText(fromE164, 'Perfecto, tu turno sigue en pie.');

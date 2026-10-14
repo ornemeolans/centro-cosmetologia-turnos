@@ -47,7 +47,7 @@ export function ResetPasswordPage() {
         body: JSON.stringify({ token: params.get('token') ?? '', password }),
       }),
     onSuccess: async ({ redirectTo }) => {
-      await qc.invalidateQueries({ queryKey: ['me'] });
+      qc.clear();
       navigate(redirectTo, { replace: true });
     },
   });

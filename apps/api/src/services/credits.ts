@@ -43,8 +43,12 @@ export async function consumeCredit(db: Db, input: { clientRecordId: string; pro
   for (const c of credits) {
     if (pending <= 0) break;
     const take = Math.min(pending, c.remainingCents);
-    await db.creditLedger.update({ where: { id: c.id }, data: { remainingCents: c.remainingCents - take } });
-    pending -= take;
+    // Descuento condicionado al saldo leído: si otro pedido lo usó en el medio, este crédito se saltea.
+    const { count } = await db.creditLedger.updateMany({
+      where: { id: c.id, remainingCents: c.remainingCents },
+      data: { remainingCents: { decrement: take } },
+    });
+    if (count === 1) pending -= take;
   }
   const used = input.amountCents - pending;
   if (used > 0) {

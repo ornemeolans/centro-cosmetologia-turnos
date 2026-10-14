@@ -78,6 +78,8 @@ export async function applyPayment(professional: Professional, payment: MpPaymen
   const amountCents = Math.round(payment.transaction_amount * 100);
   const mpPaymentId = String(payment.id);
   const existing = await prisma.payment.findUnique({ where: { mpPaymentId } });
+  // Si este mismo pago ya se había aprobado y aplicado, un aviso repetido no debe volver a procesarlo.
+  const wasApproved = existing?.status === 'approved';
   if (existing) {
     await prisma.payment.update({ where: { id: existing.id }, data: { status: payment.status, amountCents, rawPayload: payment as object } });
   } else {
@@ -93,6 +95,8 @@ export async function applyPayment(professional: Professional, payment: MpPaymen
   }
   if (payment.status !== 'approved') return payment.status;
 
+  if (wasApproved && appt.status !== 'PENDING_PAYMENT' && appt.status !== 'EXPIRED') return 'ALREADY_APPLIED';
+
   const expected = appt.depositTotalCents - appt.creditAppliedCents;
   if (payment.currency_id !== 'ARS' || amountCents < expected) {
     await alertStaff(professional, 'Pago con monto distinto al esperado', `Turno ${appt.id}: se esperaban ${money(expected)} y llegaron ${money(amountCents)}.`);
@@ -100,7 +104,8 @@ export async function applyPayment(professional: Professional, payment: MpPaymen
   }
 
   const result = await confirmPaidAppointment(appt.id);
-  if (result === 'SLOT_LOST' || (result === 'NOT_CONFIRMABLE' && appt.status !== 'CONFIRMED')) {
+  // El reintegro de MP es idempotente por pago (refund-<id>), así que repetir SLOT_LOST no duplica dinero.
+  if (result === 'SLOT_LOST' || (!wasApproved && result === 'NOT_CONFIRMABLE' && appt.status !== 'CONFIRMED')) {
     // Pagó después de que venciera la reserva y el horario ya lo tomó otra persona: se reintegra.
     await mp.refund(accessToken(professional), mpPaymentId);
     await sendEmail({
